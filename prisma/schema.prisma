@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum SubscriptionTier {
+  FREE
+  TIER_5
+  TIER_10
+}
+
+enum MaterialStatus {
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum ExamStatus {
+  DRAFT
+  ACTIVE
+  SUBMITTED
+  EXPIRED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model User {
+  id        String   @id @default(uuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+
+  subscription     Subscription?
+  uploadedMaterials UploadedMaterial[]
+  exams             Exam[]
+  attempts          Attempt[]
+
+  @@map("users")
+}
+
+model Subscription {
+  id                  String           @id @default(uuid())
+  userId              String           @unique
+  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tier                SubscriptionTier @default(FREE)
+  examsUsedThisPeriod Int              @default(0)
+  periodStart         DateTime         @default(now())
+  paymentRef          String?
+
+  @@map("subscriptions")
+}
+
+model UploadedMaterial {
+  id            String         @id @default(uuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileUrl       String
+  extractedText String?
+  status        MaterialStatus @default(PROCESSING)
+  createdAt     DateTime       @default(now())
+
+  exams Exam[]
+
+  @@index([userId])
+  @@map("uploaded_materials")
+}
+
+model Exam {
+  id              String     @id @default(uuid())
+  materialId      String
+  material        UploadedMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  durationMinutes Int
+  status          ExamStatus @default(DRAFT)
+  createdAt       DateTime   @default(now())
+
+  questions Question[]
+  attempts  Attempt[]
+
+  @@index([userId])
+  @@index([materialId])
+  @@map("exams")
+}
+
+model Question {
+  id                 String     @id @default(uuid())
+  examId             String
+  exam               Exam       @relation(fields: [examId], references: [id], onDelete: Cascade)
+  questionText       String
+  options            Json
+  correctOptionIndex Int
+  difficulty         Difficulty @default(MEDIUM)
+
+  @@index([examId])
+  @@map("questions")
+}
+
+model Attempt {
+  id          String    @id @default(uuid())
+  examId      String
+  exam        Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startedAt   DateTime  @default(now())
+  submittedAt DateTime?
+  answers     Json
+  score       Int?
+
+  @@index([examId])
+  @@index([userId])
+  @@map("attempts")
+}

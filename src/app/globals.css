@@ -24,3 +24,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Indeterminate progress bar used on the exam-generation card */
+@keyframes solvd-progress-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(420%);
+  }
+}
+
+.solvd-progress {
+  animation: solvd-progress-slide 1.4s ease-in-out infinite;
+}

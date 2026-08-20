@@ -64,7 +64,8 @@ model UploadedMaterial {
   id            String         @id @default(uuid())
   userId        String
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fileUrl       String
+  fileName      String?
+  fileUrl       String?
   extractedText String?
   status        MaterialStatus @default(PROCESSING)
   createdAt     DateTime       @default(now())
@@ -101,6 +102,7 @@ model Question {
   questionText       String
   options            Json
   correctOptionIndex Int
+  explanation        String?
   difficulty         Difficulty @default(MEDIUM)
 
   @@index([examId])

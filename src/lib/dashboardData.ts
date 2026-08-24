@@ -43,10 +43,14 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     }),
   ]);
 
-  // Average the per-exam percentages so a long paper doesn't outweigh a short one
+  // Average the per-exam NEET percentages: (score / (questions * 4)) * 100, clamped to 0-100%
   const percentages = scoredAttempts
     .filter((a) => a.exam._count.questions > 0)
-    .map((a) => (a.score! / a.exam._count.questions) * 100);
+    .map((a) => {
+      const maxMarks = a.exam._count.questions * 4;
+      const score = a.score ?? 0;
+      return Math.max(0, Math.min(100, (score / maxMarks) * 100));
+    });
 
   const avgScorePercent =
     percentages.length > 0
@@ -65,3 +69,4 @@ export async function getDashboardData(userId: string): Promise<DashboardData> {
     })),
   };
 }
+

@@ -17,5 +17,12 @@ export const generatedExamSchema = z.object({
 export type GeneratedQuestion = z.infer<typeof generatedQuestionSchema>;
 export type GeneratedExam = z.infer<typeof generatedExamSchema>;
 
+export interface ExamCustomizationOptions {
+  questionCount?: number; // 10, 15, 20, 30, 45
+  subject?: string; // "Mixed" | "Physics" | "Chemistry" | "Biology" | "Botany" | "Zoology"
+  difficulty?: "MIXED" | "EASY" | "MEDIUM" | "HARD";
+}
+
 /** Answers submitted from the client: questionId -> selected option index (0-3). */
 export type AnswerMap = Record<string, number>;
+

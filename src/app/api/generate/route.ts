@@ -1,14 +1,30 @@
 import { NextResponse } from "next/server";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
-import { generateExamFromPdf } from "@/lib/gemini";
+import { generateExamFromFiles, type InputFile } from "@/lib/gemini";
+import type { ExamCustomizationOptions } from "@/lib/examTypes";
 import { prisma } from "@/lib/prisma";
 
-// Gemini generation can take a while for a large, image-heavy PDF (e.g. a
-// full-length multi-subject paper with diagrams). 300s is Vercel Pro's cap;
-// on Hobby this is silently clamped to 60s regardless of what's set here.
 export const maxDuration = 300;
 
-const MAX_BYTES = 15 * 1024 * 1024; // 15 MB (inline request limit territory)
+const ALLOWED_MIME_TYPES = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+]);
+
+const MAX_TOTAL_BYTES = 30 * 1024 * 1024; // 30 MB combined
+
+function inferMimeType(fileName: string, mimeType: string): string {
+  if (ALLOWED_MIME_TYPES.has(mimeType)) return mimeType;
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  if (lower.endsWith(".webp")) return "image/webp";
+  return mimeType;
+}
 
 export async function POST(req: Request) {
   const user = await getOrCreateUser();
@@ -16,51 +32,93 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let file: File | null = null;
+  let formData: FormData;
   try {
-    const formData = await req.formData();
-    const entry = formData.get("file");
-    if (entry instanceof File) file = entry;
+    formData = await req.formData();
   } catch {
-    return NextResponse.json({ error: "Invalid upload" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid form data upload" }, { status: 400 });
   }
 
-  if (!file) {
-    return NextResponse.json({ error: "No file provided" }, { status: 400 });
-  }
-  if (file.type !== "application/pdf") {
+  // Support both "files" (multiple) and "file" (single)
+  const fileEntries = [
+    ...formData.getAll("files"),
+    ...formData.getAll("file"),
+  ].filter((entry): entry is File => entry instanceof File && entry.size > 0);
+
+  if (fileEntries.length === 0) {
     return NextResponse.json(
-      { error: "Please upload a PDF file." },
+      { error: "Please upload at least one PDF or image file." },
       { status: 400 }
     );
   }
-  if (file.size > MAX_BYTES) {
-    return NextResponse.json(
-      { error: "File is too large. Please upload a PDF under 15 MB." },
-      { status: 413 }
-    );
-  }
 
-  const pdfBuffer = Buffer.from(await file.arrayBuffer());
+  // Parse exam customization parameters
+  const rawQuestionCount = Number(formData.get("questionCount"));
+  const questionCount =
+    Number.isInteger(rawQuestionCount) && rawQuestionCount >= 5 && rawQuestionCount <= 60
+      ? rawQuestionCount
+      : 15;
+
+  const rawSubject = formData.get("subject")?.toString().trim();
+  const subject = rawSubject && rawSubject.length > 0 ? rawSubject : "Mixed";
+
+  const rawDifficulty = formData.get("difficulty")?.toString().trim();
+  const difficulty = (["EASY", "MEDIUM", "HARD", "MIXED"].includes(rawDifficulty ?? "")
+    ? rawDifficulty
+    : "MIXED") as ExamCustomizationOptions["difficulty"];
+
+  const customizationOptions: ExamCustomizationOptions = {
+    questionCount,
+    subject,
+    difficulty,
+  };
+
+  let totalBytes = 0;
+  const inputFiles: InputFile[] = [];
+
+  for (const file of fileEntries) {
+    totalBytes += file.size;
+    if (totalBytes > MAX_TOTAL_BYTES) {
+      return NextResponse.json(
+        { error: "Total upload size exceeds 30 MB. Please reduce file sizes." },
+        { status: 413 }
+      );
+    }
+
+    const mimeType = inferMimeType(file.name, file.type);
+    if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+      return NextResponse.json(
+        {
+          error: `Unsupported file type for "${file.name}". Please upload PDFs or images (PNG, JPG, JPEG, WEBP).`,
+        },
+        { status: 400 }
+      );
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    inputFiles.push({
+      buffer,
+      mimeType,
+      fileName: file.name,
+    });
+  }
 
   let generated;
   try {
-    generated = await generateExamFromPdf(pdfBuffer, file.type);
+    generated = await generateExamFromFiles(inputFiles, customizationOptions);
   } catch (err) {
     console.error("Exam generation failed:", err);
     const raw = err instanceof Error ? err.message : "";
     const status = (err as { status?: number })?.status;
 
-    // Surface known failure modes with distinct messages instead of a generic
-    // "try a clearer PDF" that hides the real problem.
     if (
       status === 429 ||
-      /RESOURCE_EXHAUSTED|quota|spending cap|billing/i.test(raw)
+      /RESOURCE_EXHAUSTED|quota|spending cap|billing|rate limit/i.test(raw)
     ) {
       return NextResponse.json(
         {
           error:
-            "The Gemini API has hit its quota or billing cap. Check your key's spending limit in AI Studio and try again.",
+            "The Gemini API rate limit or quota was temporarily reached. Please wait a few seconds and try again.",
         },
         { status: 429 }
       );
@@ -69,7 +127,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "Generation took too long for this PDF. Try a shorter chapter or a lower page count.",
+            "Generation took too long for the uploaded materials. Try uploading fewer pages or smaller files.",
         },
         { status: 504 }
       );
@@ -77,18 +135,23 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          "We couldn't generate an exam from this file. Try a clearer or more text-rich PDF.",
+          "We couldn't generate an exam from these files. Please verify the documents contain readable text, diagrams, or questions and try again.",
       },
       { status: 502 }
     );
   }
 
-  const durationMinutes = generated.questions.length; // ~1 min per question (NEET pace)
+  const durationMinutes = generated.questions.length; // ~1 min per question for NEET pace
+
+  const summaryFileName =
+    inputFiles.length === 1
+      ? inputFiles[0].fileName
+      : `${inputFiles[0].fileName} (+${inputFiles.length - 1} more)`;
 
   const material = await prisma.uploadedMaterial.create({
     data: {
       userId: user.id,
-      fileName: file.name,
+      fileName: summaryFileName,
       status: "READY",
     },
   });
@@ -97,7 +160,7 @@ export async function POST(req: Request) {
     data: {
       userId: user.id,
       materialId: material.id,
-      title: generated.title,
+      title: generated.title || `${subject} NEET Mock`,
       durationMinutes,
       status: "DRAFT",
       questions: {
@@ -114,3 +177,4 @@ export async function POST(req: Request) {
 
   return NextResponse.json({ examId: exam.id });
 }
+

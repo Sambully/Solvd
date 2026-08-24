@@ -42,36 +42,45 @@ function performanceNote(percent: number) {
 }
 
 function ActivityRow({ exam }: { exam: RecentExam }) {
-  const attempted = exam.score !== null && exam.questionCount > 0;
-  const percent = attempted ? (exam.score! / exam.questionCount) * 100 : 0;
+  const maxScore = exam.questionCount * 4;
+  const attempted = exam.score !== null && maxScore > 0;
+  const percent = attempted
+    ? Math.max(0, Math.min(100, Math.round((exam.score! / maxScore) * 100)))
+    : 0;
 
   return (
     <li className="flex items-center justify-between border-b border-black/[.05] px-5 py-4 last:border-b-0 dark:border-white/[.05]">
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium text-black dark:text-zinc-50">
+      <div className="min-w-0 flex-1 pr-4">
+        <Link
+          href={`/dashboard/exam/${exam.id}`}
+          className="truncate text-sm font-medium text-black hover:underline dark:text-zinc-50"
+        >
           {exam.title}
-        </p>
+        </Link>
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          {formatActivityDate(exam.createdAt)}
+          {formatActivityDate(exam.createdAt)} · {exam.questionCount} Questions ({maxScore} Marks)
         </p>
       </div>
       <div className="ml-4 shrink-0 text-right">
         {attempted ? (
           <>
-            <p className="text-sm font-semibold text-black dark:text-zinc-50">
-              {exam.score} / {exam.questionCount}
+            <p className="text-sm font-bold text-black dark:text-zinc-50">
+              <span className={exam.score! >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}>
+                {exam.score! > 0 ? `+${exam.score}` : exam.score}
+              </span>
+              <span className="text-xs font-normal text-zinc-400"> / {maxScore}</span>
             </p>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              {performanceNote(percent)}
+              {percent}% · {performanceNote(percent)}
             </p>
           </>
         ) : (
-          <>
-            <p className="text-sm font-medium text-zinc-400">
-              {exam.questionCount} questions
-            </p>
-            <p className="text-xs text-zinc-400">Not attempted</p>
-          </>
+          <Link
+            href={`/dashboard/exam/${exam.id}`}
+            className="inline-flex items-center rounded-md bg-zinc-900 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-black dark:hover:bg-zinc-200"
+          >
+            Start Test
+          </Link>
         )}
       </div>
     </li>

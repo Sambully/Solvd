@@ -8,7 +8,7 @@ import { Home, FileText, BarChart2, User, HelpCircle } from "lucide-react";
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/tests", label: "Tests", icon: FileText },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart2 },
+  { href: "/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/dashboard/profile", label: "Profile", icon: User },
   { href: "/dashboard/help", label: "Help", icon: HelpCircle },
 ];

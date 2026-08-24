@@ -37,6 +37,7 @@ export default async function ExamPage({
     <ExamRunner
       examId={exam.id}
       title={exam.title}
+      candidateName={user.name}
       durationMinutes={exam.durationMinutes}
       questions={questions}
       onSubmit={submitAttempt}

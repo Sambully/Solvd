@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Check, X, Minus, ArrowLeft } from "lucide-react";
+import { Check, X, Minus, ArrowLeft, RotateCcw } from "lucide-react";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
 import { prisma } from "@/lib/prisma";
 import type { AnswerMap } from "@/lib/examTypes";
@@ -55,16 +55,25 @@ export default async function AttemptResultPage({
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6 sm:p-8">
-      {/* Back button */}
-      <div>
+      {/* Back and Reattempt toolbar */}
+      <div className="flex items-center justify-between">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-2 text-sm font-medium text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-zinc-50"
+          className="inline-flex items-center gap-2 text-sm font-medium text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-zinc-50 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
         </Link>
+
+        <Link
+          href={`/dashboard/exam/${attempt.exam.id}`}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-black px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          Reattempt Test
+        </Link>
       </div>
+
 
       {/* NEET Score Overview Card */}
       <div className="rounded-2xl border border-black/[.08] bg-white p-6 shadow-sm dark:border-white/[.1] dark:bg-zinc-950 sm:p-8">

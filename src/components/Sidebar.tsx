@@ -7,7 +7,7 @@ import { Home, FileText, BarChart2, User, HelpCircle } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/dashboard/tests", label: "Tests", icon: FileText },
+  { href: "/tests", label: "Tests", icon: FileText },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/dashboard/profile", label: "Profile", icon: User },
   { href: "/dashboard/help", label: "Help", icon: HelpCircle },
@@ -30,7 +30,10 @@ export default function Sidebar() {
 
       <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive =
+            item.href === "/dashboard"
+              ? pathname === "/dashboard"
+              : pathname.startsWith(item.href);
           const Icon = item.icon;
           return (
             <Link
@@ -48,6 +51,7 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
 
       <div className="flex flex-col gap-3 border-t border-black/[.08] px-3 py-4 dark:border-white/[.1]">
         <button className="w-full rounded-lg bg-black px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200">

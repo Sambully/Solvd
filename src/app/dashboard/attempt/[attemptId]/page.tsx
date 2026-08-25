@@ -4,6 +4,7 @@ import { Check, X, Minus, ArrowLeft, RotateCcw } from "lucide-react";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
 import { prisma } from "@/lib/prisma";
 import type { AnswerMap } from "@/lib/examTypes";
+import DiagramViewer from "@/components/DiagramViewer";
 
 export default async function AttemptResultPage({
   params,
@@ -225,13 +226,12 @@ export default async function AttemptResultPage({
                       className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-colors ${borderStyle}`}
                     >
                       <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${
-                          isCorrectOption
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${isCorrectOption
                             ? "border-emerald-600 bg-emerald-600 text-white"
                             : isChosenWrong
-                            ? "border-red-500 bg-red-500 text-white"
-                            : "border-black/[.15] text-zinc-500 dark:border-white/[.2]"
-                        }`}
+                              ? "border-red-500 bg-red-500 text-white"
+                              : "border-black/[.15] text-zinc-500 dark:border-white/[.2]"
+                          }`}
                       >
                         {String.fromCharCode(65 + i)}
                       </span>
@@ -257,14 +257,25 @@ export default async function AttemptResultPage({
               </div>
 
               {/* Explanation block */}
-              {question.explanation && (
+              {(question.explanation || question.diagramSvg) && (
                 <div className="mt-4 rounded-xl border border-black/[.05] bg-zinc-50 p-4 dark:border-white/[.05] dark:bg-zinc-900/60 sm:ml-9">
                   <p className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                    Explanation
+                    Explanation & Concept Analysis
                   </p>
-                  <p className="mt-1 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-                    {question.explanation}
-                  </p>
+
+                  {/* Auto-Generated Visual Vector Diagram */}
+                  {question.diagramSvg && (
+                    <DiagramViewer
+                      svgString={question.diagramSvg}
+                      title="Visual Concept / Mechanism Diagram"
+                    />
+                  )}
+
+                  {question.explanation && (
+                    <p className="mt-2 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+                      {question.explanation}
+                    </p>
+                  )}
                 </div>
               )}
             </div>

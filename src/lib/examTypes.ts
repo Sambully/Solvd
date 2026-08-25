@@ -5,6 +5,7 @@ export const generatedQuestionSchema = z.object({
   options: z.array(z.string().min(1)).length(4),
   correctOptionIndex: z.number().int().min(0).max(3),
   explanation: z.string().default(""),
+  diagramSvg: z.string().nullish(),
   difficulty: z.enum(["EASY", "MEDIUM", "HARD"]).default("MEDIUM"),
 });
 

@@ -55,6 +55,13 @@ Rules:
 - correctOptionIndex is the 0-based index (0, 1, 2, or 3) corresponding to the correct answer in the options array.
 - Ensure all 4 options are plausible, non-trivial, and clear (no ambiguous or obviously bogus distractors).
 - Provide a clear, concise, and educational explanation for each question explaining why the correct option is right.
+- DIAGRAM / SVG GENERATION (diagramSvg):
+  * For questions that inherently benefit from visual explanation (e.g., Physics circuit diagrams, ray optics, free-body force vectors, logic gates; Chemistry reaction mechanisms, organic skeletal structures, electrochemical cells, energy profiles; Biology cell organelles, nephron/cardiac pathways, genetics Punnett squares, cycle flowcharts), generate a clean, responsive, valid standalone SVG string in "diagramSvg".
+  * SVG Requirements:
+    - Must start with <svg viewBox="0 0 420 200" xmlns="http://www.w3.org/2000/svg" ...> and end with </svg>.
+    - Use clear, modern vector aesthetics with distinct stroke colors (e.g., #2563eb blue, #16a34a green, #dc2626 red, #0f172a dark slate), stroke-width="2", clean fills, and legible <text> labels with font-size="11" or "12" font-family="sans-serif".
+    - Must be self-contained (no external scripts or font files).
+  * If a question is purely theoretical, definition-based, or standard text numerical without visual necessity, set "diagramSvg": null.
 - Provide a descriptive and specific title based on the chapter or topic (e.g. "Thermodynamics & Equilibrium — NEET Mock").
 
 Return ONLY a valid JSON object matching this exact structure:
@@ -67,6 +74,7 @@ Return ONLY a valid JSON object matching this exact structure:
       "options": [string, string, string, string],
       "correctOptionIndex": 0 | 1 | 2 | 3,
       "explanation": string,
+      "diagramSvg": string | null,
       "difficulty": "EASY" | "MEDIUM" | "HARD"
     }
   ]

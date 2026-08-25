@@ -103,6 +103,7 @@ model Question {
   options            Json
   correctOptionIndex Int
   explanation        String?
+  diagramSvg         String?
   difficulty         Difficulty @default(MEDIUM)
 
   @@index([examId])

@@ -169,6 +169,7 @@ export async function POST(req: Request) {
           options: q.options,
           correctOptionIndex: q.correctOptionIndex,
           explanation: q.explanation || null,
+          diagramSvg: q.diagramSvg || null,
           difficulty: q.difficulty,
         })),
       },

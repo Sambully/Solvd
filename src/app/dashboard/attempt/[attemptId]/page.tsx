@@ -27,7 +27,9 @@ export default async function AttemptResultPage({
   if (!attempt) redirect("/dashboard");
 
   const answers = (attempt.answers ?? {}) as AnswerMap;
-  const questions = attempt.exam.questions;
+  const questions = attempt.exam.questions as Array<
+    (typeof attempt.exam.questions)[number] & { diagramSvg?: string | null }
+  >;
   const totalQuestions = questions.length;
   const maxScore = totalQuestions * 4;
 

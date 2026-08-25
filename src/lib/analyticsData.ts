@@ -42,7 +42,7 @@ export interface AnalyticsSummary {
 }
 
 export async function getAnalyticsData(userId: string): Promise<AnalyticsSummary> {
-  const attempts = await prisma.attempt.findMany({
+  const rawAttempts = await (prisma as any).attempt.findMany({
     where: {
       userId,
       submittedAt: { not: null },
@@ -62,6 +62,9 @@ export async function getAnalyticsData(userId: string): Promise<AnalyticsSummary
       },
     },
   });
+
+  // Filter only solo attempts (exclude room test attempts)
+  const attempts = (rawAttempts as any[]).filter((a) => !a.roomId);
 
   if (attempts.length === 0) {
     return {

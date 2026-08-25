@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { Home, FileText, BarChart2, HelpCircle } from "lucide-react";
+import { Home, FileText, Users, BarChart2, HelpCircle } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/tests", label: "Tests", icon: FileText },
+  { href: "/dashboard/room", label: "Room", icon: Users },
   { href: "/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/dashboard/help", label: "Help", icon: HelpCircle },
 ];

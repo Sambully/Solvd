@@ -282,6 +282,28 @@ A full diagnostic suite for students to pinpoint weaknesses:
 
 ---
 
+### 4.7 Group Test Rooms (`/dashboard/room` & `src/components/room/*`)
+- **Shared Exam Generation & Scheduling**:
+  - Host generates a mock test from notes via `GenerateRoomExamCard`.
+  - Date & time picker with automatic local timezone detection (`Intl.DateTimeFormat`) converted to UTC.
+  - Unique human-shareable room code (`SLV-XXXX`) with copyable link and WhatsApp sharing template.
+- **Waiting Lobby (`RoomWaitingLobby.tsx`)**:
+  - Real-time countdown to test start time.
+  - Live-polling participant roster with host moderation controls (Remove Participant).
+- **Anti-Leak Deterministic Option Shuffling (`src/lib/optionShuffle.ts`)**:
+  - Each participant receives a unique, deterministic permutation of options `[A, B, C, D]` seeded by `(userId + questionId)`.
+  - Friends sitting together cannot copy option letters.
+  - Server automatically re-maps selections back to the original answer key during scoring.
+- **Analytics Isolation**:
+  - Room attempts are scoped by `roomId` and excluded from personal `/analytics` and `/dashboard` metrics (`roomId: null`).
+- **Room Leaderboard & Diagnostic Insights**:
+  - Synchronized unlock when all participants finish or test window closes.
+  - **Comparative SVG Bar Chart (`RoomLeaderboardChart.tsx`)**: Visual score rankings.
+  - **Ranked Leaderboard Table (`RoomLeaderboardTable.tsx`)**: Rank, Name, Score, Accuracy %, Time Taken.
+  - **Group Weak Topics Breakdown (`RoomWeakTopics.tsx`)**: Error cluster analysis for questions with >=40% group error rate.
+
+---
+
 ## 5. Repository File Structure
 
 ```
@@ -290,7 +312,7 @@ Neet CBT/
 │   ├── build_solvd_plan.py       # Build plan generator script
 │   └── Solvd_Build_Plan.xlsx     # 8-phase milestone and roadmap workbook
 ├── prisma/
-│   └── schema.prisma             # PostgreSQL schema (User, Exam, Question, Attempt, etc.)
+│   └── schema.prisma             # PostgreSQL schema (User, Exam, Question, Attempt, TestRoom, RoomParticipant)
 ├── public/                       # Static public assets
 ├── src/
 │   ├── app/
@@ -312,43 +334,49 @@ Neet CBT/
 │   │   │   │   └── page.tsx      # Exam runner launcher page
 │   │   │   ├── layout.tsx
 │   │   │   ├── page.tsx          # Main student dashboard
+│   │   │   ├── room/             # Group test rooms routes
+│   │   │   │   ├── [roomCode]/page.tsx
+│   │   │   │   ├── create/page.tsx
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── RoomLandingClient.tsx
 │   │   │   └── tests/            # Tests management route
 │   │   ├── tests/                # Global /tests route
-│   │   │   ├── layout.tsx
-│   │   │   └── page.tsx
 │   │   ├── globals.css           # Tailwind CSS imports & animations
 │   │   ├── layout.tsx            # Root layout with ClerkProvider
 │   │   ├── page.tsx              # Public landing page
 │   │   └── middleware.ts         # Route protection middleware
 │   ├── components/
 │   │   ├── analytics/            # Performance analytics components
-│   │   │   ├── AnalyticsClient.tsx
-│   │   │   ├── DifficultyMasteryCards.tsx
-│   │   │   ├── MarksBreakdownDonut.tsx
-│   │   │   ├── PacingGaugeCard.tsx
-│   │   │   ├── ScoreTrendChart.tsx
-│   │   │   ├── SmartInsightsCard.tsx
-│   │   │   └── TestHistoryTable.tsx
 │   │   ├── exam/                 # Authentic NTA CBT components
-│   │   │   ├── NTAHeader.tsx
-│   │   │   ├── NTAPalette.tsx
-│   │   │   ├── NTAQuestionPane.tsx
-│   │   │   └── NTASubmitModal.tsx
-│   │   ├── ExamCardItem.tsx      # Interactive test card item with drop menu
+│   │   ├── room/                 # Group Test Rooms components
+│   │   │   ├── GenerateRoomExamCard.tsx
+│   │   │   ├── JoinRoomModal.tsx
+│   │   │   ├── RoomExamClient.tsx
+│   │   │   ├── RoomLeaderboardChart.tsx
+│   │   │   ├── RoomLeaderboardTable.tsx
+│   │   │   ├── RoomResultsWaiting.tsx
+│   │   │   ├── RoomWaitingLobby.tsx
+│   │   │   ├── RoomWeakTopics.tsx
+│   │   │   └── ScheduleRoomModal.tsx
+│   │   ├── DiagramViewer.tsx     # High-resolution SVG viewer with zoom modal
+│   │   ├── ExamCardItem.tsx      # Interactive test card item
 │   │   ├── ExamRunner.tsx        # Central dual-skin test taking engine
 │   │   ├── GenerateExamCard.tsx  # Drag & drop upload + exam settings drawer
 │   │   ├── RenameExamModal.tsx   # Modal for renaming exam titles
-│   │   ├── Sidebar.tsx           # Dashboard navigation sidebar
+│   │   ├── Sidebar.tsx           # Dashboard navigation sidebar with Room item
 │   │   └── TestsListClient.tsx   # Searchable test list client component
 │   └── lib/
-│       ├── analyticsData.ts      # Analytics aggregation and calculation logic
+│       ├── analyticsData.ts      # Isolated analytics aggregation queries
 │       ├── dashboardData.ts      # Dashboard stats & recent exams queries
 │       ├── examActions.ts        # Rename & delete exam server actions
 │       ├── examTypes.ts          # Zod schemas & exam data types
-│       ├── gemini.ts             # Google GenAI client, prompting, Files API & fallbacks
-│       ├── getOrCreateUser.ts    # Clerk session to PostgreSQL user sync
+│       ├── gemini.ts             # Google GenAI client with diagram generation
+│       ├── getOrCreateUser.ts    # Clerk session to PostgreSQL user sync with retries
 │       ├── ntaTypes.ts           # NTA status enums & palette types
-│       └── prisma.ts             # Prisma client singleton instance
+│       ├── optionShuffle.ts      # Anti-leak deterministic option permutations
+│       ├── prisma.ts             # Prisma client singleton instance
+│       ├── roomActions.ts        # Group test rooms server actions & queries
+│       └── svgSanitizer.ts       # Security sanitizer for vector SVG diagrams
 ├── package.json
 ├── tsconfig.json
 └── CONTEXT.md                    # This master context document

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Trophy, Users, AlertCircle, RotateCcw } from "lucide-react";
+import { ArrowLeft, Trophy, Users, AlertCircle } from "lucide-react";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
 import { prisma } from "@/lib/prisma";
 import {
@@ -73,14 +73,15 @@ export default async function TestRoomPage({
   // Phase 2: Live Exam State (Anti-Leak Option Shuffling)
   // =========================================================================
   if (room.isStarted && !room.userAttemptId) {
-    const dbRoom = await (prisma as any).testRoom.findUnique({
+    const db = prisma as any;
+    const dbRoom = await db.testRoom.findUnique({
       where: { roomCode: room.roomCode },
       select: { examId: true },
     });
 
     if (!dbRoom?.examId) redirect("/dashboard/room");
 
-    const examData = await (prisma as any).exam.findUnique({
+    const examData = await db.exam.findUnique({
       where: { id: dbRoom.examId },
       include: {
         questions: {
@@ -123,7 +124,7 @@ export default async function TestRoomPage({
   // =========================================================================
   // Phase 3 & 4: Submitted / Intermediate Waiting & Room Results Leaderboard
   // =========================================================================
-  const resultsRes = await getRoomResults(room.roomCode);
+  const resultsRes = (await getRoomResults(room.roomCode)) as any;
 
   if (!resultsRes.isReady) {
     return (

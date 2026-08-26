@@ -98,7 +98,7 @@ model Exam {
 
   questions Question[]
   attempts  Attempt[]
-  testRooms TestRoom[]
+  roomExams RoomExam[]
 
   @@index([userId])
   @@index([materialId])
@@ -121,37 +121,37 @@ model Question {
 }
 
 model Attempt {
-  id              String           @id @default(uuid())
-  examId          String
-  exam            Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
-  userId          String
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  roomId          String?
-  room            TestRoom?        @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  roomParticipant RoomParticipant?
-  startedAt       DateTime         @default(now())
-  submittedAt     DateTime?
-  answers         Json
-  score           Int?
+  id          String    @id @default(uuid())
+  examId      String
+  exam        Exam      @relation(fields: [examId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roomId      String?
+  room        TestRoom? @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomExamId  String?
+  roomExam    RoomExam? @relation(fields: [roomExamId], references: [id], onDelete: SetNull)
+  startedAt   DateTime  @default(now())
+  submittedAt DateTime?
+  answers     Json
+  score       Int?
 
   @@index([examId])
   @@index([userId])
   @@index([roomId])
+  @@index([roomExamId])
   @@map("attempts")
 }
 
 model TestRoom {
   id          String            @id @default(uuid())
   roomCode    String            @unique
+  name        String            @default("NEET Study Circle")
   hostUserId  String
   hostUser    User              @relation("HostedTestRooms", fields: [hostUserId], references: [id], onDelete: Cascade)
-  examId      String
-  exam        Exam              @relation(fields: [examId], references: [id], onDelete: Cascade)
-  scheduledAt DateTime
-  status      RoomStatus        @default(SCHEDULED)
   createdAt   DateTime          @default(now())
 
   participants RoomParticipant[]
+  roomExams    RoomExam[]
   attempts     Attempt[]
 
   @@index([hostUserId])
@@ -159,15 +159,30 @@ model TestRoom {
   @@map("test_rooms")
 }
 
+model RoomExam {
+  id          String     @id @default(uuid())
+  roomId      String
+  room        TestRoom   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  examId      String
+  exam        Exam       @relation(fields: [examId], references: [id], onDelete: Cascade)
+  scheduledAt DateTime   @default(now())
+  status      RoomStatus @default(SCHEDULED)
+  createdAt   DateTime   @default(now())
+
+  attempts Attempt[]
+
+  @@index([roomId])
+  @@index([examId])
+  @@map("room_exams")
+}
+
 model RoomParticipant {
-  id        String    @id @default(uuid())
-  roomId    String
-  room      TestRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  joinedAt  DateTime  @default(now())
-  attemptId String?   @unique
-  attempt   Attempt?  @relation(fields: [attemptId], references: [id], onDelete: SetNull)
+  id       String   @id @default(uuid())
+  roomId   String
+  room     TestRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now())
 
   @@unique([roomId, userId])
   @@index([roomId])

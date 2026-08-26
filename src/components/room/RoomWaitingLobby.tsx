@@ -226,7 +226,7 @@ export default function RoomWaitingLobby({
         </div>
 
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {room.participants.map((p) => {
+          {(room.participants as any[]).map((p: any) => {
             const isMe = p.userId === room.currentUserId;
             return (
               <div

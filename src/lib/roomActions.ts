@@ -5,8 +5,8 @@ import { getOrCreateUser } from "@/lib/getOrCreateUser";
 import { prisma } from "@/lib/prisma";
 import type { AnswerMap } from "@/lib/examTypes";
 import { mapShuffledToOriginalOptionIndex } from "@/lib/optionShuffle";
+import { getStudentColor } from "@/lib/roomConstants";
 
-const db = prisma as any;
 const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 async function generateUniqueRoomCode(): Promise<string> {
@@ -19,7 +19,7 @@ async function generateUniqueRoomCode(): Promise<string> {
       );
     }
     const code = `SLV-${suffix}`;
-    const existing = await db.testRoom.findUnique({
+    const existing = await prisma.testRoom.findUnique({
       where: { roomCode: code },
       select: { id: true },
     });
@@ -29,51 +29,94 @@ async function generateUniqueRoomCode(): Promise<string> {
   return `SLV-${Date.now().toString(36).slice(-4).toUpperCase()}`;
 }
 
-export type UserRoomSummary = {
+export type PersistentRoomSummary = {
   id: string;
   roomCode: string;
-  title: string;
-  scheduledAt: Date;
-  durationMinutes: number;
-  questionCount: number;
-  status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  name: string;
   isHost: boolean;
   hostName: string;
   participantCount: number;
-  hasSubmitted: boolean;
+  testCount: number;
+  createdAt: Date;
+  latestTestTitle?: string | null;
 };
 
 /**
- * Creates a new scheduled group test room for a generated exam.
+ * Fetches all persistent rooms the current user is a member or host of.
  */
-export async function createRoom(
-  examId: string,
-  scheduledAtISO: string
+export async function getUserRooms(): Promise<{
+  success: boolean;
+  rooms: PersistentRoomSummary[];
+  error?: string;
+}> {
+  try {
+    const user = await getOrCreateUser();
+    if (!user) return { success: false, rooms: [], error: "Unauthorized" };
+
+    const rooms = await prisma.testRoom.findMany({
+      where: {
+        OR: [
+          { hostUserId: user.id },
+          { participants: { some: { userId: user.id } } },
+        ],
+      },
+      include: {
+        hostUser: { select: { id: true, name: true } },
+        participants: { select: { id: true } },
+        roomExams: {
+          include: {
+            exam: { select: { title: true } },
+          },
+          orderBy: { scheduledAt: "desc" },
+          take: 1,
+        },
+        _count: {
+          select: {
+            participants: true,
+            roomExams: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const summaries: PersistentRoomSummary[] = rooms.map((r) => ({
+      id: r.id,
+      roomCode: r.roomCode,
+      name: r.name,
+      isHost: r.hostUserId === user.id,
+      hostName: r.hostUser.name,
+      participantCount: r._count.participants,
+      testCount: r._count.roomExams,
+      createdAt: r.createdAt,
+      latestTestTitle: r.roomExams[0]?.exam.title ?? null,
+    }));
+
+    return { success: true, rooms: summaries };
+  } catch (err) {
+    console.error("Failed to fetch user rooms:", err);
+    return { success: false, rooms: [], error: "Failed to load study rooms." };
+  }
+}
+
+/**
+ * Creates a persistent study group room.
+ */
+export async function createStudyRoom(
+  roomName: string
 ): Promise<{ success: boolean; roomCode?: string; roomId?: string; error?: string }> {
   try {
     const user = await getOrCreateUser();
     if (!user) return { success: false, error: "Unauthorized" };
 
-    const exam = await db.exam.findFirst({
-      where: { id: examId, userId: user.id },
-      select: { id: true, title: true },
-    });
-    if (!exam) return { success: false, error: "Exam not found or access denied." };
-
-    const scheduledAt = new Date(scheduledAtISO);
-    if (isNaN(scheduledAt.getTime())) {
-      return { success: false, error: "Invalid scheduled date and time." };
-    }
-
+    const name = roomName.trim() || "NEET Study Circle";
     const roomCode = await generateUniqueRoomCode();
 
-    const room = await db.testRoom.create({
+    const room = await prisma.testRoom.create({
       data: {
         roomCode,
+        name,
         hostUserId: user.id,
-        examId: exam.id,
-        scheduledAt,
-        status: "SCHEDULED",
         participants: {
           create: {
             userId: user.id,
@@ -85,13 +128,13 @@ export async function createRoom(
     revalidatePath("/dashboard/room");
     return { success: true, roomCode: room.roomCode, roomId: room.id };
   } catch (err) {
-    console.error("Failed to create test room:", err);
-    return { success: false, error: "Failed to create group test room." };
+    console.error("Failed to create study room:", err);
+    return { success: false, error: "Failed to create study room." };
   }
 }
 
 /**
- * Joins an existing room with a human-readable room code (e.g. SLV-4X9K).
+ * Joins a persistent study group room via its short code (e.g. SLV-4X9K).
  */
 export async function joinRoom(
   rawRoomCode: string
@@ -103,10 +146,9 @@ export async function joinRoom(
     const code = rawRoomCode.trim().toUpperCase();
     if (!code) return { success: false, error: "Please enter a valid room code." };
 
-    const room = await db.testRoom.findUnique({
+    const room = await prisma.testRoom.findUnique({
       where: { roomCode: code },
       include: {
-        exam: { select: { durationMinutes: true } },
         participants: { select: { userId: true } },
       },
     });
@@ -115,20 +157,9 @@ export async function joinRoom(
       return { success: false, error: "No room found with this code. Please verify and try again." };
     }
 
-    if (room.status === "COMPLETED" || room.status === "CANCELLED") {
-      return { success: false, error: "This test room has already ended." };
-    }
-
-    // Check if user is already a participant
-    const alreadyJoined = room.participants.some((p: any) => p.userId === user.id);
+    const alreadyJoined = room.participants.some((p) => p.userId === user.id);
     if (!alreadyJoined) {
-      const now = Date.now();
-      const expirationMs = room.scheduledAt.getTime() + (room.exam.durationMinutes + 15) * 60 * 1000;
-      if (now > expirationMs) {
-        return { success: false, error: "This test session has expired and can no longer be joined." };
-      }
-
-      await db.roomParticipant.create({
+      await prisma.roomParticipant.create({
         data: {
           roomId: room.id,
           userId: user.id,
@@ -146,175 +177,305 @@ export async function joinRoom(
 }
 
 /**
- * Removes a participant from the room (Host-only action).
+ * Adds a newly generated test to a persistent room.
  */
-export async function removeParticipant(
+export async function createTestInRoom(
   roomId: string,
-  participantUserId: string
-): Promise<{ success: boolean; error?: string }> {
+  examId: string,
+  scheduledAtISO: string
+): Promise<{ success: boolean; roomExamId?: string; error?: string }> {
   try {
     const user = await getOrCreateUser();
     if (!user) return { success: false, error: "Unauthorized" };
 
-    const room = await db.testRoom.findUnique({
+    const room = await prisma.testRoom.findUnique({
       where: { id: roomId },
-      select: { id: true, hostUserId: true, roomCode: true },
+      include: {
+        participants: { select: { userId: true } },
+      },
     });
 
-    if (!room || room.hostUserId !== user.id) {
-      return { success: false, error: "Only the host can remove participants." };
+    if (!room) return { success: false, error: "Room not found." };
+
+    const isMember = room.participants.some((p) => p.userId === user.id);
+    if (!isMember && room.hostUserId !== user.id) {
+      return { success: false, error: "Only room members can add tests." };
     }
 
-    if (participantUserId === user.id) {
-      return { success: false, error: "Host cannot be removed from the room." };
+    const scheduledAt = new Date(scheduledAtISO);
+    if (isNaN(scheduledAt.getTime())) {
+      return { success: false, error: "Invalid scheduled start time." };
     }
 
-    await db.roomParticipant.deleteMany({
-      where: { roomId, userId: participantUserId },
+    const roomExam = await prisma.roomExam.create({
+      data: {
+        roomId: room.id,
+        examId,
+        scheduledAt,
+        status: "SCHEDULED",
+      },
     });
 
     revalidatePath(`/dashboard/room/${room.roomCode}`);
-    return { success: true };
+    return { success: true, roomExamId: roomExam.id };
   } catch (err) {
-    console.error("Failed to remove participant:", err);
-    return { success: false, error: "Failed to remove participant." };
+    console.error("Failed to add test to room:", err);
+    return { success: false, error: "Failed to create room test." };
   }
 }
 
-export type RoomParticipantInfo = {
+export type RoomMemberInfo = {
   userId: string;
   name: string;
-  email: string;
   isHost: boolean;
-  hasSubmitted: boolean;
   joinedAt: Date;
+  color: { stroke: string; bg: string; label: string };
 };
 
-export type RoomStateResponse = {
+export type RoomTestItem = {
+  roomExamId: string;
+  examId: string;
+  title: string;
+  questionCount: number;
+  durationMinutes: number;
+  scheduledAt: Date;
+  status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  isLive: boolean;
+  hasUserSubmitted: boolean;
+  userScore: number | null;
+  finishedCount: number;
+  totalParticipants: number;
+};
+
+export type StudentTrajectoryPoint = {
+  testIndex: number;
+  testTitle: string;
+  examId: string;
+  score: number;
+  maxScore: number;
+  percentage: number;
+  accuracy: number;
+  attempted: boolean;
+};
+
+export type StudentTrajectorySeries = {
+  userId: string;
+  name: string;
+  isCurrentUser: boolean;
+  color: { stroke: string; bg: string; label: string };
+  averagePercentage: number;
+  points: StudentTrajectoryPoint[];
+};
+
+export type RoomDetailsResponse = {
   success: boolean;
   error?: string;
   room?: {
     id: string;
     roomCode: string;
-    title: string;
-    scheduledAt: Date;
-    durationMinutes: number;
-    questionCount: number;
-    status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+    name: string;
     isHost: boolean;
     currentUserId: string;
     hostName: string;
-    participants: RoomParticipantInfo[];
-    userAttemptId: string | null;
-    isStarted: boolean;
-    isExpired: boolean;
-    allSubmitted: boolean;
+    members: RoomMemberInfo[];
+    tests: RoomTestItem[];
+    trajectoryTests: Array<{ index: number; title: string; date: string }>;
+    studentTrajectories: StudentTrajectorySeries[];
   };
 };
 
 /**
- * Fetches the live state of a room for real-time lobby polling.
+ * Fetches all details for a persistent room: members, test roster, and multi-test variation trajectory.
  */
-export async function getRoomState(roomCode: string): Promise<RoomStateResponse> {
+export async function getRoomDetails(roomCode: string): Promise<RoomDetailsResponse> {
   try {
     const user = await getOrCreateUser();
     if (!user) return { success: false, error: "Unauthorized" };
 
     const code = roomCode.trim().toUpperCase();
-    const room = await db.testRoom.findUnique({
+    const room = await prisma.testRoom.findUnique({
       where: { roomCode: code },
       include: {
         hostUser: { select: { id: true, name: true } },
-        exam: {
-          select: {
-            id: true,
-            title: true,
-            durationMinutes: true,
-            _count: { select: { questions: true } },
-          },
-        },
         participants: {
           include: {
-            user: { select: { id: true, name: true, email: true } },
+            user: { select: { id: true, name: true } },
           },
           orderBy: { joinedAt: "asc" },
+        },
+        roomExams: {
+          include: {
+            exam: {
+              select: {
+                id: true,
+                title: true,
+                durationMinutes: true,
+                _count: { select: { questions: true } },
+                questions: { select: { id: true, correctOptionIndex: true } },
+              },
+            },
+            attempts: {
+              select: {
+                id: true,
+                userId: true,
+                score: true,
+                answers: true,
+                submittedAt: true,
+              },
+            },
+          },
+          orderBy: { scheduledAt: "asc" },
         },
       },
     });
 
     if (!room) return { success: false, error: "Room not found." };
 
-    const isMember = room.participants.some((p: any) => p.userId === user.id);
+    const isMember = room.participants.some((p) => p.userId === user.id);
     if (!isMember) {
-      return { success: false, error: "You are not a participant in this room. Please join first." };
+      return { success: false, error: "You are not a member of this room." };
     }
 
-    const now = new Date();
-    const isStarted = now.getTime() >= room.scheduledAt.getTime();
-    const expirationMs =
-      room.scheduledAt.getTime() + (room.exam.durationMinutes + 15) * 60 * 1000;
-    const isExpired = now.getTime() > expirationMs;
+    const members: RoomMemberInfo[] = room.participants.map((p, idx) => ({
+      userId: p.user.id,
+      name: p.user.name,
+      isHost: p.user.id === room.hostUserId,
+      joinedAt: p.joinedAt,
+      color: getStudentColor(idx),
+    }));
 
-    const allSubmitted =
-      room.participants.length > 0 &&
-      room.participants.every((p: any) => p.attemptId !== null);
+    const now = Date.now();
+    const tests: RoomTestItem[] = [];
+    const completedOrAttemptedExams: Array<(typeof room.roomExams)[number]> = [];
 
-    let updatedStatus = room.status;
-    if (allSubmitted || (isExpired && room.status !== "COMPLETED")) {
-      updatedStatus = "COMPLETED";
-      if (room.status !== "COMPLETED") {
-        await db.testRoom.update({
-          where: { id: room.id },
-          data: { status: "COMPLETED" },
-        });
+    for (const re of room.roomExams) {
+      const scheduledMs = new Date(re.scheduledAt).getTime();
+      const durationMs = (re.exam.durationMinutes + 15) * 60 * 1000;
+      const isPastScheduled = now >= scheduledMs;
+      const isWindowExpired = now > scheduledMs + durationMs;
+
+      const userAttempt = re.attempts.find((a) => a.userId === user.id && a.submittedAt !== null);
+      const finishedCount = re.attempts.filter((a) => a.submittedAt !== null).length;
+      const allFinished = members.length > 0 && finishedCount >= members.length;
+
+      let status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED" = re.status;
+      if (allFinished || isWindowExpired) {
+        status = "COMPLETED";
+      } else if (isPastScheduled) {
+        status = "IN_PROGRESS";
       }
-    } else if (isStarted && room.status === "SCHEDULED") {
-      updatedStatus = "IN_PROGRESS";
-      await db.testRoom.update({
-        where: { id: room.id },
-        data: { status: "IN_PROGRESS" },
+
+      const isLive = status === "IN_PROGRESS";
+
+      tests.push({
+        roomExamId: re.id,
+        examId: re.exam.id,
+        title: re.exam.title,
+        questionCount: re.exam._count.questions,
+        durationMinutes: re.exam.durationMinutes,
+        scheduledAt: re.scheduledAt,
+        status,
+        isLive,
+        hasUserSubmitted: Boolean(userAttempt),
+        userScore: userAttempt?.score ?? null,
+        finishedCount,
+        totalParticipants: members.length,
       });
+
+      // Keep for trajectory chart if completed or attempted by at least 1 person
+      if (re.attempts.length > 0 || isPastScheduled) {
+        completedOrAttemptedExams.push(re);
+      }
     }
 
-    const currentUserPart = room.participants.find((p: any) => p.userId === user.id);
+    // Sort tests latest scheduled first for the UI list
+    tests.sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime());
+
+    // Build Multi-Test Trajectory Line Graph Data
+    const trajectoryTests = completedOrAttemptedExams.map((re, idx) => ({
+      index: idx + 1,
+      title: re.exam.title,
+      date: new Date(re.scheduledAt).toLocaleDateString([], { month: "short", day: "numeric" }),
+    }));
+
+    const studentTrajectories: StudentTrajectorySeries[] = members.map((member) => {
+      const points: StudentTrajectoryPoint[] = [];
+      let totalPercentage = 0;
+      let scoredTestCount = 0;
+
+      completedOrAttemptedExams.forEach((re, idx) => {
+        const attempt = re.attempts.find((a) => a.userId === member.userId && a.submittedAt !== null);
+        const totalQuestions = re.exam._count.questions;
+        const maxScore = totalQuestions * 4;
+
+        if (attempt) {
+          const score = attempt.score ?? 0;
+          const percentage = maxScore > 0 ? Math.max(0, Math.min(100, Math.round((score / maxScore) * 100))) : 0;
+          totalPercentage += percentage;
+          scoredTestCount++;
+
+          points.push({
+            testIndex: idx + 1,
+            testTitle: re.exam.title,
+            examId: re.exam.id,
+            score,
+            maxScore,
+            percentage,
+            accuracy: percentage,
+            attempted: true,
+          });
+        } else {
+          // Did not attempt or missed
+          points.push({
+            testIndex: idx + 1,
+            testTitle: re.exam.title,
+            examId: re.exam.id,
+            score: 0,
+            maxScore,
+            percentage: 0,
+            accuracy: 0,
+            attempted: false,
+          });
+        }
+      });
+
+      const averagePercentage = scoredTestCount > 0 ? Math.round(totalPercentage / scoredTestCount) : 0;
+
+      return {
+        userId: member.userId,
+        name: member.name,
+        isCurrentUser: member.userId === user.id,
+        color: member.color,
+        averagePercentage,
+        points,
+      };
+    });
 
     return {
       success: true,
       room: {
         id: room.id,
         roomCode: room.roomCode,
-        title: room.exam.title,
-        scheduledAt: room.scheduledAt,
-        durationMinutes: room.exam.durationMinutes,
-        questionCount: room.exam._count.questions,
-        status: updatedStatus,
+        name: room.name,
         isHost: room.hostUserId === user.id,
         currentUserId: user.id,
         hostName: room.hostUser.name,
-        participants: room.participants.map((p: any) => ({
-          userId: p.user.id,
-          name: p.user.name,
-          email: p.user.email,
-          isHost: p.user.id === room.hostUserId,
-          hasSubmitted: p.attemptId !== null,
-          joinedAt: p.joinedAt,
-        })),
-        userAttemptId: currentUserPart?.attemptId ?? null,
-        isStarted,
-        isExpired,
-        allSubmitted,
+        members,
+        tests,
+        trajectoryTests,
+        studentTrajectories,
       },
     };
   } catch (err) {
-    console.error("Failed to get room state:", err);
+    console.error("Failed to get persistent room details:", err);
     return { success: false, error: "Failed to load room." };
   }
 }
 
 /**
- * Submits a room test attempt under anti-leak option shuffling rules.
+ * Submits an attempt for a specific room exam under anti-leak option shuffling rules.
  */
-export async function submitRoomAttempt(
+export async function submitRoomExamAttempt(
   roomId: string,
   examId: string,
   answers: AnswerMap
@@ -323,28 +484,37 @@ export async function submitRoomAttempt(
     const user = await getOrCreateUser();
     if (!user) return { success: false, error: "Unauthorized" };
 
-    const room = await db.testRoom.findUnique({
+    const room = await prisma.testRoom.findUnique({
       where: { id: roomId },
       include: {
         participants: true,
+        roomExams: { where: { examId } },
       },
     });
 
     if (!room) return { success: false, error: "Room not found." };
 
-    const participant = room.participants.find((p: any) => p.userId === user.id);
-    if (!participant) return { success: false, error: "You are not a participant in this room." };
+    const isMember = room.participants.some((p) => p.userId === user.id);
+    if (!isMember) return { success: false, error: "You are not a member of this room." };
 
-    if (participant.attemptId) {
-      return { success: true, attemptId: participant.attemptId };
+    const roomExam = room.roomExams[0];
+    const roomExamId = roomExam?.id ?? null;
+
+    // Check if user already submitted this specific exam in this room
+    const existingAttempt = await prisma.attempt.findFirst({
+      where: {
+        userId: user.id,
+        examId,
+        roomId: room.id,
+        submittedAt: { not: null },
+      },
+    });
+
+    if (existingAttempt) {
+      return { success: true, attemptId: existingAttempt.id };
     }
 
-    const now = new Date();
-    if (now.getTime() < room.scheduledAt.getTime() - 10000) {
-      return { success: false, error: "Cannot submit before the scheduled start time." };
-    }
-
-    const exam = await db.exam.findUnique({
+    const exam = await prisma.exam.findUnique({
       where: { id: examId },
       include: {
         questions: { select: { id: true, correctOptionIndex: true } },
@@ -358,9 +528,7 @@ export async function submitRoomAttempt(
 
     for (const q of exam.questions) {
       const selectedShuffledIndex = answers[q.id];
-      if (selectedShuffledIndex === undefined) {
-        continue;
-      }
+      if (selectedShuffledIndex === undefined) continue;
 
       const originalOptionIndex = mapShuffledToOriginalOptionIndex(
         selectedShuffledIndex,
@@ -376,40 +544,38 @@ export async function submitRoomAttempt(
     }
 
     const totalScore = correctCount * 4 - incorrectCount * 1;
+    const now = new Date();
 
-    const attempt = await db.attempt.create({
+    const attempt = await prisma.attempt.create({
       data: {
         examId: exam.id,
         userId: user.id,
         roomId: room.id,
+        roomExamId,
         answers,
         score: totalScore,
         submittedAt: now,
       },
     });
 
-    await db.roomParticipant.update({
-      where: { id: participant.id },
-      data: { attemptId: attempt.id },
-    });
-
-    const remainingUnfinished = room.participants.filter(
-      (p: any) => p.userId !== user.id && p.attemptId === null
-    );
-
-    if (remainingUnfinished.length === 0) {
-      await db.testRoom.update({
-        where: { id: room.id },
-        data: { status: "COMPLETED" },
-      });
-    }
-
     revalidatePath(`/dashboard/room/${room.roomCode}`);
+    revalidatePath(`/dashboard/room/${room.roomCode}/test/${examId}`);
     return { success: true, attemptId: attempt.id };
   } catch (err) {
-    console.error("Failed to submit room attempt:", err);
+    console.error("Failed to submit room exam attempt:", err);
     return { success: false, error: "Failed to submit room test attempt." };
   }
+}
+
+/**
+ * Alias for submitRoomExamAttempt
+ */
+export async function submitRoomAttempt(
+  roomId: string,
+  examId: string,
+  answers: AnswerMap
+) {
+  return submitRoomExamAttempt(roomId, examId, answers);
 }
 
 export type LeaderboardEntry = {
@@ -425,6 +591,7 @@ export type LeaderboardEntry = {
   unattempted: number;
   timeSpentSeconds: number;
   isCurrentUser: boolean;
+  color: { stroke: string; bg: string; label: string };
 };
 
 export type WeakTopicQuestion = {
@@ -437,15 +604,13 @@ export type WeakTopicQuestion = {
   errorRate: number;
 };
 
-export type RoomResultsResponse = {
+export type RoomExamLeaderboardResponse = {
   success: boolean;
   error?: string;
   isReady: boolean;
-  totalParticipants?: number;
-  finishedCount?: number;
   title?: string;
+  roomName?: string;
   roomCode?: string;
-  hostName?: string;
   maxScore?: number;
   totalQuestions?: number;
   leaderboard?: LeaderboardEntry[];
@@ -453,66 +618,59 @@ export type RoomResultsResponse = {
 };
 
 /**
- * Fetches group leaderboard and diagnostic weak topics once ready.
+ * Retrieves the synchronized leaderboard and diagnostic weak topics for a specific test inside a room.
  */
-export async function getRoomResults(roomCode: string): Promise<RoomResultsResponse> {
+export async function getRoomExamLeaderboard(
+  roomCode: string,
+  examId: string
+): Promise<RoomExamLeaderboardResponse> {
   try {
     const user = await getOrCreateUser();
     if (!user) return { success: false, isReady: false, error: "Unauthorized" };
 
     const code = roomCode.trim().toUpperCase();
-    const room = await db.testRoom.findUnique({
+    const room = await prisma.testRoom.findUnique({
       where: { roomCode: code },
       include: {
-        hostUser: { select: { name: true } },
-        exam: {
-          include: {
-            questions: {
-              select: {
-                id: true,
-                questionText: true,
-                correctOptionIndex: true,
-                explanation: true,
-                diagramSvg: true,
-              },
-            },
-          },
-        },
         participants: {
           include: {
             user: { select: { id: true, name: true } },
-            attempt: true,
+          },
+          orderBy: { joinedAt: "asc" },
+        },
+        roomExams: {
+          where: { examId },
+          include: {
+            exam: {
+              include: {
+                questions: {
+                  select: {
+                    id: true,
+                    questionText: true,
+                    correctOptionIndex: true,
+                    explanation: true,
+                    diagramSvg: true,
+                  },
+                },
+              },
+            },
+            attempts: {
+              include: {
+                user: { select: { id: true, name: true } },
+              },
+            },
           },
         },
       },
     });
 
-    if (!room) return { success: false, isReady: false, error: "Room not found." };
-
-    const totalParticipants = room.participants.length;
-    const finishedCount = room.participants.filter((p: any) => p.attemptId !== null).length;
-
-    const now = Date.now();
-    const windowExpired =
-      now >= room.scheduledAt.getTime() + (room.exam.durationMinutes + 10) * 60 * 1000;
-
-    const isReady =
-      room.status === "COMPLETED" ||
-      (totalParticipants > 0 && finishedCount === totalParticipants) ||
-      windowExpired;
-
-    if (!isReady) {
-      return {
-        success: true,
-        isReady: false,
-        totalParticipants,
-        finishedCount,
-        title: room.exam.title,
-        roomCode: room.roomCode,
-      };
+    if (!room || room.roomExams.length === 0) {
+      return { success: false, isReady: false, error: "Room test not found." };
     }
 
-    const questions = room.exam.questions as any[];
+    const roomExam = room.roomExams[0];
+    const exam = roomExam.exam;
+    const questions = exam.questions;
     const totalQuestions = questions.length;
     const maxScore = totalQuestions * 4;
 
@@ -523,8 +681,10 @@ export async function getRoomResults(roomCode: string): Promise<RoomResultsRespo
       questionStats[q.id] = { wrongCount: 0, totalAttempts: 0 };
     }
 
-    for (const part of room.participants) {
-      const attempt = part.attempt;
+    room.participants.forEach((part, pIdx) => {
+      const color = getStudentColor(pIdx);
+      const attempt = roomExam.attempts.find((a) => a.userId === part.user.id && a.submittedAt !== null);
+
       if (!attempt) {
         rawEntries.push({
           userId: part.user.id,
@@ -536,49 +696,52 @@ export async function getRoomResults(roomCode: string): Promise<RoomResultsRespo
           correct: 0,
           incorrect: 0,
           unattempted: totalQuestions,
-          timeSpentSeconds: room.exam.durationMinutes * 60,
+          timeSpentSeconds: exam.durationMinutes * 60,
           isCurrentUser: part.user.id === user.id,
+          color,
         });
-        continue;
+        return;
       }
 
-      const answers = (attempt.answers ?? {}) as AnswerMap;
+      const answers = (attempt.answers || {}) as Record<string, number>;
       let correct = 0;
       let incorrect = 0;
       let unattempted = 0;
 
       for (const q of questions) {
-        const sel = answers[q.id];
-        questionStats[q.id].totalAttempts += 1;
-
-        if (sel === undefined) {
-          unattempted += 1;
-          questionStats[q.id].wrongCount += 1;
+        const selectedShuffledIndex = answers[q.id];
+        if (selectedShuffledIndex === undefined) {
+          unattempted++;
         } else {
-          const original = mapShuffledToOriginalOptionIndex(sel, part.user.id, q.id);
-          if (original === q.correctOptionIndex) {
-            correct += 1;
+          questionStats[q.id].totalAttempts++;
+          const originalOptionIndex = mapShuffledToOriginalOptionIndex(
+            selectedShuffledIndex,
+            part.user.id,
+            q.id
+          );
+
+          if (originalOptionIndex === q.correctOptionIndex) {
+            correct++;
           } else {
-            incorrect += 1;
-            questionStats[q.id].wrongCount += 1;
+            incorrect++;
+            questionStats[q.id].wrongCount++;
           }
         }
       }
 
-      const attempted = correct + incorrect;
-      const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
-      const computedScore = attempt.score ?? (correct * 4 - incorrect);
-      const percentage = maxScore > 0 ? Math.max(0, Math.round((computedScore / maxScore) * 100)) : 0;
+      const score = attempt.score ?? (correct * 4 - incorrect * 1);
+      const attemptedCount = correct + incorrect;
+      const accuracy = attemptedCount > 0 ? Math.round((correct / attemptedCount) * 100) : 0;
+      const percentage = maxScore > 0 ? Math.max(0, Math.min(100, Math.round((score / maxScore) * 100))) : 0;
 
-      const timeSpentSeconds =
-        attempt.submittedAt && attempt.startedAt
-          ? Math.max(10, Math.round((new Date(attempt.submittedAt).getTime() - new Date(attempt.startedAt).getTime()) / 1000))
-          : room.exam.durationMinutes * 60;
+      const startedMs = new Date(attempt.startedAt).getTime();
+      const submittedMs = attempt.submittedAt ? new Date(attempt.submittedAt).getTime() : startedMs;
+      const timeSpentSeconds = Math.max(1, Math.round((submittedMs - startedMs) / 1000));
 
       rawEntries.push({
         userId: part.user.id,
         name: part.user.name,
-        score: computedScore,
+        score,
         maxScore,
         percentage,
         accuracy,
@@ -587,11 +750,13 @@ export async function getRoomResults(roomCode: string): Promise<RoomResultsRespo
         unattempted,
         timeSpentSeconds,
         isCurrentUser: part.user.id === user.id,
+        color,
       });
-    }
+    });
 
     rawEntries.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
+      if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
       return a.timeSpentSeconds - b.timeSpentSeconds;
     });
 
@@ -601,103 +766,161 @@ export async function getRoomResults(roomCode: string): Promise<RoomResultsRespo
     }));
 
     const weakTopics: WeakTopicQuestion[] = questions
-      .map((q: any) => {
-        const stat = questionStats[q.id] || { wrongCount: 0, totalAttempts: 0 };
-        const errorRate =
-          stat.totalAttempts > 0
-            ? Math.round((stat.wrongCount / stat.totalAttempts) * 100)
-            : 0;
+      .map((q) => {
+        const stats = questionStats[q.id];
+        const errorRate = stats.totalAttempts > 0 ? Math.round((stats.wrongCount / stats.totalAttempts) * 100) : 0;
         return {
           questionId: q.id,
           questionText: q.questionText,
           explanation: q.explanation,
           diagramSvg: q.diagramSvg,
-          wrongCount: stat.wrongCount,
-          totalAttempts: stat.totalAttempts,
+          wrongCount: stats.wrongCount,
+          totalAttempts: stats.totalAttempts,
           errorRate,
         };
       })
-      .filter((q: WeakTopicQuestion) => q.errorRate >= 40)
-      .sort((a: WeakTopicQuestion, b: WeakTopicQuestion) => b.errorRate - a.errorRate);
+      .filter((q) => q.wrongCount > 0)
+      .sort((a, b) => b.errorRate - a.errorRate || b.wrongCount - a.wrongCount)
+      .slice(0, 5);
 
     return {
       success: true,
       isReady: true,
-      totalParticipants,
-      finishedCount,
-      title: room.exam.title,
+      title: exam.title,
+      roomName: room.name,
       roomCode: room.roomCode,
-      hostName: room.hostUser.name,
       maxScore,
       totalQuestions,
       leaderboard,
       weakTopics,
     };
   } catch (err) {
-    console.error("Failed to get room results:", err);
-    return { success: false, isReady: false, error: "Failed to load room leaderboard." };
+    console.error("Failed to fetch room exam leaderboard:", err);
+    return { success: false, isReady: false, error: "Failed to load leaderboard." };
   }
 }
 
 /**
- * Fetches all rooms hosted or joined by the current user.
+ * Legacy compatibility wrapper for getRoomResults
  */
-export async function getUserRooms(): Promise<{
-  hostedRooms: UserRoomSummary[];
-  joinedRooms: UserRoomSummary[];
-}> {
-  const user = await getOrCreateUser();
-  if (!user) return { hostedRooms: [], joinedRooms: [] };
-
-  const rooms = await db.testRoom.findMany({
-    where: {
-      OR: [
-        { hostUserId: user.id },
-        { participants: { some: { userId: user.id } } },
-      ],
-    },
-    orderBy: { scheduledAt: "desc" },
+export async function getRoomResults(roomCode: string, examId?: string) {
+  const room = await prisma.testRoom.findUnique({
+    where: { roomCode: roomCode.trim().toUpperCase() },
     include: {
-      hostUser: { select: { name: true } },
-      exam: {
-        select: {
-          title: true,
-          durationMinutes: true,
-          _count: { select: { questions: true } },
-        },
-      },
-      participants: {
-        select: { userId: true, attemptId: true },
-      },
+      roomExams: { orderBy: { scheduledAt: "desc" }, take: 1 },
     },
   });
+  const targetExamId = examId || room?.roomExams[0]?.examId;
+  if (!targetExamId) return { isReady: false, error: "No test found in room." };
+  return getRoomExamLeaderboard(roomCode, targetExamId);
+}
 
-  const hostedRooms: UserRoomSummary[] = [];
-  const joinedRooms: UserRoomSummary[] = [];
+/**
+ * Legacy compatibility wrapper for removeParticipant
+ */
+export async function removeParticipant(
+  roomId: string,
+  participantUserId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getOrCreateUser();
+    if (!user) return { success: false, error: "Unauthorized" };
 
-  for (const r of rooms) {
-    const isHost = r.hostUserId === user.id;
-    const userPart = r.participants.find((p: any) => p.userId === user.id);
-    const summary: UserRoomSummary = {
+    const room = await prisma.testRoom.findUnique({
+      where: { id: roomId },
+      select: { id: true, hostUserId: true, roomCode: true },
+    });
+
+    if (!room || room.hostUserId !== user.id) {
+      return { success: false, error: "Only host can remove participants." };
+    }
+
+    await prisma.roomParticipant.deleteMany({
+      where: { roomId, userId: participantUserId },
+    });
+
+    revalidatePath(`/dashboard/room/${room.roomCode}`);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: "Failed to remove participant." };
+  }
+}
+
+export type RoomStateResponse = {
+  success: boolean;
+  error?: string;
+  room?: {
+    id: string;
+    roomCode: string;
+    title: string;
+    scheduledAt: Date;
+    durationMinutes: number;
+    questionCount: number;
+    status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+    isHost: boolean;
+    currentUserId: string;
+    hostName: string;
+    participants: Array<{
+      userId: string;
+      name: string;
+      email: string;
+      isHost: boolean;
+      hasSubmitted: boolean;
+      joinedAt: Date;
+    }>;
+    userAttemptId: string | null;
+    isStarted: boolean;
+    isExpired: boolean;
+    allSubmitted: boolean;
+  };
+};
+
+/**
+ * Legacy compatibility wrapper for getRoomState
+ */
+export async function getRoomState(roomCode: string): Promise<RoomStateResponse> {
+  const details = await getRoomDetails(roomCode);
+  if (!details.success || !details.room) return { success: false, error: details.error };
+  const r = details.room;
+  const firstTest = r.tests[0];
+  return {
+    success: true,
+    room: {
       id: r.id,
       roomCode: r.roomCode,
-      title: r.exam.title,
-      scheduledAt: r.scheduledAt,
-      durationMinutes: r.exam.durationMinutes,
-      questionCount: r.exam._count.questions,
-      status: r.status,
-      isHost,
-      hostName: r.hostUser.name,
-      participantCount: r.participants.length,
-      hasSubmitted: userPart?.attemptId !== null,
-    };
+      title: firstTest?.title || r.name,
+      scheduledAt: firstTest?.scheduledAt || new Date(),
+      durationMinutes: firstTest?.durationMinutes || 15,
+      questionCount: firstTest?.questionCount || 15,
+      status: firstTest?.status === "IN_PROGRESS" ? "IN_PROGRESS" : firstTest?.status === "COMPLETED" ? "COMPLETED" : "SCHEDULED",
+      isHost: r.isHost,
+      currentUserId: r.currentUserId,
+      hostName: r.hostName,
+      participants: r.members.map((m) => ({
+        userId: m.userId,
+        name: m.name,
+        email: "",
+        isHost: m.isHost,
+        hasSubmitted: false,
+        joinedAt: m.joinedAt,
+      })),
+      userAttemptId: null,
+      isStarted: firstTest?.isLive || false,
+      isExpired: false,
+      allSubmitted: false,
+    },
+  };
+}
 
-    if (isHost) {
-      hostedRooms.push(summary);
-    } else {
-      joinedRooms.push(summary);
-    }
-  }
-
-  return { hostedRooms, joinedRooms };
+/**
+ * Backward compatibility wrapper
+ */
+export async function createRoom(
+  examId: string,
+  scheduledAtISO: string
+): Promise<{ success: boolean; roomCode?: string; roomId?: string; error?: string }> {
+  const roomRes = await createStudyRoom("NEET Study Room");
+  if (!roomRes.success || !roomRes.roomId) return roomRes;
+  await createTestInRoom(roomRes.roomId, examId, scheduledAtISO);
+  return roomRes;
 }

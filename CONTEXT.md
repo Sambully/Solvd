@@ -370,7 +370,7 @@ Neet CBT/
 │       ├── dashboardData.ts      # Dashboard stats & recent exams queries
 │       ├── examActions.ts        # Rename & delete exam server actions
 │       ├── examTypes.ts          # Zod schemas & exam data types
-│       ├── gemini.ts             # Google GenAI client with diagram generation
+│       ├── gemini.ts             # Google GenAI client with multimodal OCR & 8192 token cap
 │       ├── getOrCreateUser.ts    # Clerk session to PostgreSQL user sync with retries
 │       ├── ntaTypes.ts           # NTA status enums & palette types
 │       ├── optionShuffle.ts      # Anti-leak deterministic option permutations

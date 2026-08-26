@@ -118,7 +118,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "The Gemini API rate limit or quota was temporarily reached. Please wait a few seconds and try again.",
+            "The Gemini AI rate limit or quota was temporarily reached. Please wait a few seconds and try again.",
         },
         { status: 429 }
       );
@@ -135,7 +135,9 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          "We couldn't generate an exam from these files. Please verify the documents contain readable text, diagrams, or questions and try again.",
+          raw.includes("Invalid JSON") || raw.includes("schema")
+            ? "AI generation encountered a formatting issue on these materials. Please try generating again or select specific chapter pages."
+            : "We couldn't generate an exam from these files. Please verify the documents contain readable text, diagrams, or notes and try again.",
       },
       { status: 502 }
     );

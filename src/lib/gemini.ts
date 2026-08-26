@@ -42,29 +42,34 @@ function buildSystemPrompt(options?: ExamCustomizationOptions): string {
 
   return `You are an expert NEET (National Eligibility cum Entrance Test) question-paper setter for Physics, Chemistry, and Biology.
 
-You will be given source study materials (PDF documents, textbook chapters, handwritten/printed notes, or problem sets). Produce a full computer-based-test (CBT) style mock exam derived STRICTLY from the concepts covered in the source.
+You will be given source study materials (PDF documents, scanned textbook pages, handwritten notes, question papers, figures, or diagrams). Produce a full computer-based-test (CBT) style mock exam derived STRICTLY from the concepts covered in the source.
 
-Rules:
+MULTIMODAL / IMAGE READING INSTRUCTIONS:
+- The input materials may contain scanned textbook pages, photos, handwritten notes, textbook screenshots, chemical structures, circuit diagrams, or charts.
+- Thoroughly perform visual OCR across all pages to extract text, equations, reactions, diagrams, and labels.
+
+EXAM RULES:
 - Generate EXACTLY ${count} high-quality MCQs.
 - ${subject}
 - ${difficultyInstruction}
 - Every question must be a single-correct-answer MCQ with EXACTLY 4 options (A, B, C, D), matching authentic NEET exam standards.
 - Base every question strictly on the subject matter present in the source. Do NOT invent unrelated topics.
 - If the source has questions/answers or notes, create original NEET-calibrated questions that test understanding of those key concepts, reactions, definitions, formulae, and mechanisms.
-- Format mathematical equations and chemical formulas cleanly (e.g. standard chemical notation or clean LaTeX like $E=mc^2$, $\\Delta H$, $\\text{H}_2\\text{SO}_4$).
+- Format equations and formulas cleanly and legibly (e.g. "Delta H = q_p", "H2SO4", "E = mc^2", "PV = nRT").
 - correctOptionIndex is the 0-based index (0, 1, 2, or 3) corresponding to the correct answer in the options array.
 - Ensure all 4 options are plausible, non-trivial, and clear (no ambiguous or obviously bogus distractors).
 - Provide a clear, concise, and educational explanation for each question explaining why the correct option is right.
 - DIAGRAM / SVG GENERATION (diagramSvg):
-  * For questions that inherently benefit from visual explanation (e.g., Physics circuit diagrams, ray optics, free-body force vectors, logic gates; Chemistry reaction mechanisms, organic skeletal structures, electrochemical cells, energy profiles; Biology cell organelles, nephron/cardiac pathways, genetics Punnett squares, cycle flowcharts), generate a clean, responsive, valid standalone SVG string in "diagramSvg".
-  * SVG Requirements:
-    - Must start with <svg viewBox="0 0 420 200" xmlns="http://www.w3.org/2000/svg" ...> and end with </svg>.
-    - Use clear, modern vector aesthetics with distinct stroke colors (e.g., #2563eb blue, #16a34a green, #dc2626 red, #0f172a dark slate), stroke-width="2", clean fills, and legible <text> labels with font-size="11" or "12" font-family="sans-serif".
-    - Must be self-contained (no external scripts or font files).
+  * For questions that inherently benefit from visual explanation (e.g., Physics circuit diagrams, ray optics, free-body force vectors; Chemistry reaction mechanisms, organic skeletal structures; Biology pathways), generate a clean, responsive, valid standalone SVG string in "diagramSvg".
+  * Keep SVGs compact, clean, and concise (< 400 characters, viewBox="0 0 360 180", stroke-width="2", clear text labels).
   * If a question is purely theoretical, definition-based, or standard text numerical without visual necessity, set "diagramSvg": null.
 - Provide a descriptive and specific title based on the chapter or topic (e.g. "Thermodynamics & Equilibrium — NEET Mock").
 
-Return ONLY a valid JSON object matching this exact structure:
+CRITICAL JSON FORMATTING & ESCAPING:
+- Return ONLY a valid JSON object matching the exact structure below.
+- Do NOT include markdown code fences or conversational text outside the JSON.
+- If using any backslashes (e.g. in formulas), they MUST be double-escaped (\\\\) to ensure the JSON parses without syntax errors.
+
 {
   "title": string,
   "subject": "Physics" | "Chemistry" | "Biology" | "Mixed",
@@ -102,21 +107,78 @@ async function waitUntilActive(
   return file;
 }
 
-/** Clean any code blocks or accidental markdown wrapper around JSON */
-function extractAndParseJson(text: string): unknown {
-  let cleaned = text.trim();
-  if (cleaned.startsWith("```")) {
-    cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+/**
+ * Sanitizes and repairs raw model output to guarantee bulletproof JSON parsing,
+ * especially handling unescaped LaTeX backslashes, trailing commas, and unclosed brackets.
+ */
+function sanitizeAndRepairJson(rawText: string): unknown {
+  let text = rawText.trim();
+
+  // Strip markdown code fences (```json ... ``` or ``` ...)
+  if (text.startsWith("```")) {
+    text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
   }
+
+  // Extract outermost JSON object if surrounded by preamble/postscript
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    text = text.substring(firstBrace, lastBrace + 1);
+  }
+
+  // 1. Try standard JSON.parse first
   try {
-    return JSON.parse(cleaned);
+    return JSON.parse(text);
   } catch {
-    // If there's surrounding text, find the outermost JSON object
-    const match = cleaned.match(/\{[\s\S]*\}/);
-    if (match) {
-      return JSON.parse(match[0]);
-    }
-    throw new Error("Invalid JSON returned from model");
+    // Continue to repair pipeline
+  }
+
+  // 2. Repair invalid backslash escapes (e.g. LaTeX \Delta, \text, \frac, \alpha)
+  // In JSON, valid escapes are \" \\ \/ \b \f \n \r \t \uXXXX
+  let repaired = text.replace(/\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g, "\\\\");
+
+  // 3. Remove trailing commas before closing braces or brackets (e.g. [1, 2, ] -> [1, 2])
+  repaired = repaired.replace(/,\s*([\]}])/g, "$1");
+
+  try {
+    return JSON.parse(repaired);
+  } catch {
+    // Continue to truncated JSON auto-completion
+  }
+
+  // 4. Handle truncated JSON (if model response was cut off near token limit)
+  let candidate = repaired.trim();
+  // Close unclosed quote if odd number of unescaped quotes
+  const quoteCount = (candidate.match(/(?<!\\)"/g) || []).length;
+  if (quoteCount % 2 !== 0) {
+    candidate += '"';
+  }
+
+  // Balance open braces and brackets
+  let openBrackets = 0;
+  let openBraces = 0;
+  for (let i = 0; i < candidate.length; i++) {
+    const char = candidate[i];
+    if (char === "[") openBrackets++;
+    else if (char === "]") openBrackets = Math.max(0, openBrackets - 1);
+    else if (char === "{") openBraces++;
+    else if (char === "}") openBraces = Math.max(0, openBraces - 1);
+  }
+
+  while (openBrackets > 0) {
+    candidate += "]";
+    openBrackets--;
+  }
+  while (openBraces > 0) {
+    candidate += "}";
+    openBraces--;
+  }
+
+  try {
+    return JSON.parse(candidate);
+  } catch (finalErr) {
+    console.error("JSON parsing failed after all repair attempts. Raw text snippet:", rawText.slice(0, 300));
+    throw new Error("Invalid JSON structure returned by model.");
   }
 }
 
@@ -181,9 +243,9 @@ export async function generateExamFromFiles(
       new Set(
         [
           configuredModel,
-          "gemini-2.5-flash",
           "gemini-2.0-flash",
           "gemini-1.5-flash",
+          "gemini-1.5-pro",
         ].filter((m): m is string => Boolean(m))
       )
     );
@@ -197,14 +259,15 @@ export async function generateExamFromFiles(
           contents: [{ role: "user", parts: contentParts }],
           config: {
             responseMimeType: "application/json",
-            temperature: 0.5,
+            maxOutputTokens: 8192,
+            temperature: 0.4,
           },
         });
 
         const text = response.text;
         if (!text) throw new Error(`Empty response received from ${model}`);
 
-        const parsed = extractAndParseJson(text);
+        const parsed = sanitizeAndRepairJson(text);
         return generatedExamSchema.parse(parsed);
       } catch (err) {
         lastError = err;
@@ -232,4 +295,3 @@ export async function generateExamFromPdf(
     { buffer: pdf, mimeType, fileName: "uploaded-document.pdf" },
   ]);
 }
-

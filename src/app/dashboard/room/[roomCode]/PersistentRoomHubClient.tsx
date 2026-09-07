@@ -35,8 +35,10 @@ function RoomTestCard({
   roomCode: string;
 }) {
   const [now, setNow] = useState(Date.now());
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
@@ -60,11 +62,11 @@ function RoomTestCard({
       : `${diffMinutes}m ${diffSeconds}s`;
 
   const scheduledDate = new Date(test.scheduledAt);
-  const formattedDate = scheduledDate.toLocaleDateString([], {
+  const formattedDate = scheduledDate.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   });
-  const formattedTime = scheduledDate.toLocaleTimeString([], {
+  const formattedTime = scheduledDate.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -100,7 +102,7 @@ function RoomTestCard({
         <div className="mt-4 flex flex-col gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
           <div className="flex items-center gap-2">
             <Calendar className="h-3.5 w-3.5 text-blue-500" />
-            <span>
+            <span suppressHydrationWarning>
               {formattedDate} at {formattedTime}
             </span>
           </div>
@@ -138,7 +140,9 @@ function RoomTestCard({
         ) : isUpcoming ? (
           <div className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-black/[.08] bg-zinc-50 py-2.5 text-xs font-semibold text-zinc-500 dark:border-white/[.1] dark:bg-zinc-900/60 dark:text-zinc-400">
             <Lock className="h-3.5 w-3.5 text-zinc-400" />
-            <span>Starts in <strong>{countdownText}</strong></span>
+            <span suppressHydrationWarning>
+              Starts in <strong suppressHydrationWarning>{mounted ? countdownText : "..."}</strong>
+            </span>
           </div>
         ) : (
           <Link
@@ -366,8 +370,8 @@ export default function PersistentRoomHubClient({
                   {m.name}
                   {m.isHost && <Crown className="h-3 w-3 text-amber-500 shrink-0" />}
                 </p>
-                <p className="text-[10px] text-zinc-400">
-                  Joined {new Date(m.joinedAt).toLocaleDateString([], { month: "short", day: "numeric" })}
+                <p className="text-[10px] text-zinc-400" suppressHydrationWarning>
+                  Joined {new Date(m.joinedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 </p>
               </div>
             </div>

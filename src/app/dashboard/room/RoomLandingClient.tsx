@@ -70,9 +70,9 @@ function PersistentRoomCard({ room }: { room: PersistentRoomSummary }) {
       </div>
 
       <div className="mt-5 pt-3 border-t border-black/[.06] dark:border-white/[.08] flex items-center justify-between">
-        <span className="text-[10px] text-zinc-400 flex items-center gap-1">
+        <span className="text-[10px] text-zinc-400 flex items-center gap-1" suppressHydrationWarning>
           <Calendar className="h-3 w-3" />
-          Created {new Date(room.createdAt).toLocaleDateString([], { month: "short", day: "numeric" })}
+          Created {new Date(room.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
         </span>
 
         <Link

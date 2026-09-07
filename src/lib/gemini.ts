@@ -15,7 +15,7 @@ export interface InputFile {
   fileName: string;
 }
 
-const INLINE_MAX_BYTES = 512 * 1024; // 512 KB
+const INLINE_MAX_BYTES = 8 * 1024 * 1024; // 8 MB
 
 function getClient() {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -42,11 +42,12 @@ function buildSystemPrompt(options?: ExamCustomizationOptions): string {
 
   return `You are an expert NEET (National Eligibility cum Entrance Test) question-paper setter for Physics, Chemistry, and Biology.
 
-You will be given source study materials (PDF documents, scanned textbook pages, handwritten notes, question papers, figures, or diagrams). Produce a full computer-based-test (CBT) style mock exam derived STRICTLY from the concepts covered in the source.
+You will be given source study materials (PDF documents, scanned test series pages, handwritten notes, coaching question papers like Aakash/Allen, figures, or diagrams). Produce a full computer-based-test (CBT) style mock exam derived STRICTLY from the concepts covered in the source.
 
 MULTIMODAL / IMAGE READING INSTRUCTIONS:
-- The input materials may contain scanned textbook pages, photos, handwritten notes, textbook screenshots, chemical structures, circuit diagrams, or charts.
-- Thoroughly perform visual OCR across all pages to extract text, equations, reactions, diagrams, and labels.
+- The input materials may contain scanned test papers, coaching mock sheets, multi-column layouts, photos, handwritten notes, chemical structures, circuit diagrams, or charts.
+- Thoroughly perform visual OCR across all pages and columns (both left & right columns) to read questions, options (1)/(2)/(3)/(4) or (A)/(B)/(C)/(D), equations, formulas, diagrams (e.g. cubical electric flux, capacitors, circuits), and labels.
+- If the source is a scanned test paper, extract and calibrate high-yield NEET questions directly based on the questions, numerical problems, and concepts on those pages.
 
 EXAM RULES:
 - Generate EXACTLY ${count} high-quality MCQs.
@@ -55,15 +56,14 @@ EXAM RULES:
 - Every question must be a single-correct-answer MCQ with EXACTLY 4 options (A, B, C, D), matching authentic NEET exam standards.
 - Base every question strictly on the subject matter present in the source. Do NOT invent unrelated topics.
 - If the source has questions/answers or notes, create original NEET-calibrated questions that test understanding of those key concepts, reactions, definitions, formulae, and mechanisms.
-- Format equations and formulas cleanly and legibly (e.g. "Delta H = q_p", "H2SO4", "E = mc^2", "PV = nRT").
+- Format equations and formulas cleanly (e.g. "Delta H = q_p", "H2SO4", "E = mc^2", "PV = nRT").
 - correctOptionIndex is the 0-based index (0, 1, 2, or 3) corresponding to the correct answer in the options array.
-- Ensure all 4 options are plausible, non-trivial, and clear (no ambiguous or obviously bogus distractors).
-- Provide a clear, concise, and educational explanation for each question explaining why the correct option is right.
-- DIAGRAM / SVG GENERATION (diagramSvg):
-  * For questions that inherently benefit from visual explanation (e.g., Physics circuit diagrams, ray optics, free-body force vectors; Chemistry reaction mechanisms, organic skeletal structures; Biology pathways), generate a clean, responsive, valid standalone SVG string in "diagramSvg".
-  * Keep SVGs compact, clean, and concise (< 400 characters, viewBox="0 0 360 180", stroke-width="2", clear text labels).
-  * If a question is purely theoretical, definition-based, or standard text numerical without visual necessity, set "diagramSvg": null.
-- Provide a descriptive and specific title based on the chapter or topic (e.g. "Thermodynamics & Equilibrium — NEET Mock").
+- Ensure all 4 options are plausible, non-trivial, and clear.
+- Keep explanations CONCISE (1-2 sentences: core concept + formula/calculation + answer) to ensure fast and reliable generation.
+- DIAGRAM / SVG (diagramSvg):
+  * Only when a question strictly requires a visual figure (e.g. circuit or capacitor slabs), provide a minimal, compact SVG (< 250 chars, viewBox="0 0 300 150").
+  * For all standard numerical or conceptual MCQs, set "diagramSvg": null.
+- Provide a descriptive and specific title based on the chapter or topic (e.g. "Electrostatics & Capacitance — NEET Mock").
 
 CRITICAL JSON FORMATTING & ESCAPING:
 - Return ONLY a valid JSON object matching the exact structure below.
@@ -109,7 +109,7 @@ async function waitUntilActive(
 
 /**
  * Sanitizes and repairs raw model output to guarantee bulletproof JSON parsing,
- * especially handling unescaped LaTeX backslashes, trailing commas, and unclosed brackets.
+ * including handling unescaped LaTeX backslashes, trailing commas, and token-limit truncations.
  */
 function sanitizeAndRepairJson(rawText: string): unknown {
   let text = rawText.trim();
@@ -119,42 +119,52 @@ function sanitizeAndRepairJson(rawText: string): unknown {
     text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
   }
 
-  // Extract outermost JSON object if surrounded by preamble/postscript
+  // Extract outermost JSON block
   const firstBrace = text.indexOf("{");
-  const lastBrace = text.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-    text = text.substring(firstBrace, lastBrace + 1);
+  const firstBracket = text.indexOf("[");
+  if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+    text = text.substring(firstBrace);
+  } else if (firstBracket !== -1) {
+    text = text.substring(firstBracket);
   }
 
-  // 1. Try standard JSON.parse first
+  // 1. Direct standard parse
   try {
     return JSON.parse(text);
-  } catch {
-    // Continue to repair pipeline
-  }
+  } catch {}
 
-  // 2. Repair invalid backslash escapes (e.g. LaTeX \Delta, \text, \frac, \alpha)
-  // In JSON, valid escapes are \" \\ \/ \b \f \n \r \t \uXXXX
+  // 2. Escape invalid LaTeX backslashes (e.g. \Delta, \mu, \alpha, \text, \frac)
   let repaired = text.replace(/\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})/g, "\\\\");
 
-  // 3. Remove trailing commas before closing braces or brackets (e.g. [1, 2, ] -> [1, 2])
+  // 3. Remove trailing commas before closing braces/brackets
   repaired = repaired.replace(/,\s*([\]}])/g, "$1");
 
   try {
     return JSON.parse(repaired);
-  } catch {
-    // Continue to truncated JSON auto-completion
+  } catch {}
+
+  // 4. Truncation Recovery Strategy A:
+  // If model was truncated mid-question near token limit, find last completed question block '}'
+  const lastCloseBraceIdx = repaired.lastIndexOf("}");
+  if (lastCloseBraceIdx > 0) {
+    const candidateWithClosers = repaired.substring(0, lastCloseBraceIdx + 1) + "\n  ]\n}";
+    try {
+      return JSON.parse(candidateWithClosers);
+    } catch {}
+
+    const candidatePlain = repaired.substring(0, lastCloseBraceIdx + 1);
+    try {
+      return JSON.parse(candidatePlain);
+    } catch {}
   }
 
-  // 4. Handle truncated JSON (if model response was cut off near token limit)
+  // 5. Truncation Recovery Strategy B: Auto-balancer with quote completion
   let candidate = repaired.trim();
-  // Close unclosed quote if odd number of unescaped quotes
   const quoteCount = (candidate.match(/(?<!\\)"/g) || []).length;
   if (quoteCount % 2 !== 0) {
     candidate += '"';
   }
 
-  // Balance open braces and brackets
   let openBrackets = 0;
   let openBraces = 0;
   for (let i = 0; i < candidate.length; i++) {
@@ -176,10 +186,92 @@ function sanitizeAndRepairJson(rawText: string): unknown {
 
   try {
     return JSON.parse(candidate);
-  } catch (finalErr) {
-    console.error("JSON parsing failed after all repair attempts. Raw text snippet:", rawText.slice(0, 300));
-    throw new Error("Invalid JSON structure returned by model.");
+  } catch {}
+
+  // 6. Last-ditch: regex-extract question blocks
+  const questionBlocks: any[] = [];
+  const qMatches = text.matchAll(/\{[^{}]*"question(?:Text)?"[^{}]*\}/g);
+  for (const m of qMatches) {
+    try {
+      const qObj = JSON.parse(m[0]);
+      if (qObj.questionText || qObj.question) {
+        questionBlocks.push(qObj);
+      }
+    } catch {}
   }
+
+  if (questionBlocks.length > 0) {
+    return {
+      title: "NEET Mock Exam",
+      subject: "Mixed",
+      questions: questionBlocks,
+    };
+  }
+
+  console.error("JSON parsing failed after all repair attempts. Raw text snippet:", rawText.slice(0, 300));
+  throw new Error("Invalid JSON structure returned by model.");
+}
+
+/**
+ * Normalizes any model JSON output variant (arrays, alternative key names, nested schemas)
+ * into the canonical GeneratedExam structure.
+ */
+function normalizeExamData(raw: unknown): GeneratedExam {
+  let data: any = raw;
+  if (Array.isArray(data)) {
+    data = {
+      title: "NEET Mock Exam",
+      subject: "Mixed",
+      questions: data,
+    };
+  }
+
+  if (data && typeof data === "object") {
+    const rawQuestions = Array.isArray(data.questions)
+      ? data.questions
+      : Array.isArray(data.exam?.questions)
+      ? data.exam.questions
+      : Array.isArray(data.mcqs)
+      ? data.mcqs
+      : [];
+
+    data.questions = rawQuestions.map((q: any) => {
+      let options = q.options || q.choices;
+      if (!Array.isArray(options) && (q.optionA || q.option1 || q.A)) {
+        options = [
+          q.optionA || q.option1 || q.A,
+          q.optionB || q.option2 || q.B,
+          q.optionC || q.option3 || q.C,
+          q.optionD || q.option4 || q.D,
+        ].filter(Boolean);
+      }
+
+      let correctIdx =
+        q.correctOptionIndex ??
+        q.correct_option_index ??
+        q.answerIndex ??
+        q.correctAnswerIndex;
+
+      if (typeof q.answer === "string") {
+        const trimmed = q.answer.trim().toUpperCase();
+        if (trimmed === "A" || trimmed === "(1)" || trimmed === "1") correctIdx = 0;
+        else if (trimmed === "B" || trimmed === "(2)" || trimmed === "2") correctIdx = 1;
+        else if (trimmed === "C" || trimmed === "(3)" || trimmed === "3") correctIdx = 2;
+        else if (trimmed === "D" || trimmed === "(4)" || trimmed === "4") correctIdx = 3;
+      }
+
+      return {
+        questionText: q.questionText || q.question || q.question_text || q.text || "Question",
+        options: Array.isArray(options) ? options : ["A", "B", "C", "D"],
+        correctOptionIndex: correctIdx ?? 0,
+        explanation: q.explanation || q.solution || "",
+        diagramSvg: q.diagramSvg || q.diagram_svg || null,
+        difficulty: q.difficulty || "MEDIUM",
+      };
+    });
+  }
+
+  return generatedExamSchema.parse(data);
 }
 
 /**
@@ -237,15 +329,14 @@ export async function generateExamFromFiles(
       }
     }
 
-    // Fallback models in priority order to guarantee reliability
+    // Candidate models in priority order to guarantee reliability
     const configuredModel = process.env.GEMINI_MODEL;
     const modelCandidates = Array.from(
       new Set(
         [
           configuredModel,
-          "gemini-2.0-flash",
-          "gemini-1.5-flash",
-          "gemini-1.5-pro",
+          "gemini-2.5-flash",
+          "gemini-flash-latest",
         ].filter((m): m is string => Boolean(m))
       )
     );
@@ -268,7 +359,7 @@ export async function generateExamFromFiles(
         if (!text) throw new Error(`Empty response received from ${model}`);
 
         const parsed = sanitizeAndRepairJson(text);
-        return generatedExamSchema.parse(parsed);
+        return normalizeExamData(parsed);
       } catch (err) {
         lastError = err;
         console.warn(`Model generation failed on ${model}, attempting fallback:`, err);

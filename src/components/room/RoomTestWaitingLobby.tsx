@@ -49,11 +49,13 @@ export default function RoomTestWaitingLobby({
 }: RoomTestWaitingLobbyProps) {
   const router = useRouter();
   const [countdown, setCountdown] = useState(() => formatCountdown(scheduledAt));
+  const [mounted, setMounted] = useState(false);
   const [isReadyToStart, setIsReadyToStart] = useState(() => {
     return Date.now() >= new Date(scheduledAt).getTime();
   });
 
   useEffect(() => {
+    setMounted(true);
     const timer = setInterval(() => {
       const ready = Date.now() >= new Date(scheduledAt).getTime();
       setIsReadyToStart(ready);
@@ -67,12 +69,12 @@ export default function RoomTestWaitingLobby({
   }, [scheduledAt, router]);
 
   const scheduledDate = new Date(scheduledAt);
-  const formattedDate = scheduledDate.toLocaleDateString([], {
+  const formattedDate = scheduledDate.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
   });
-  const formattedTime = scheduledDate.toLocaleTimeString([], {
+  const formattedTime = scheduledDate.toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -109,12 +111,12 @@ export default function RoomTestWaitingLobby({
           <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">
             {isReadyToStart ? "Test is now live" : "Test Starts In"}
           </span>
-          <div className="mt-1 font-mono text-4xl sm:text-5xl font-black tracking-tight text-black dark:text-white">
-            {countdown}
+          <div suppressHydrationWarning className="mt-1 font-mono text-4xl sm:text-5xl font-black tracking-tight text-black dark:text-white">
+            {mounted ? countdown : "..."}
           </div>
           <div className="mt-3 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
             <Calendar className="h-3.5 w-3.5 text-blue-500" />
-            <span>Scheduled for {formattedDate} at {formattedTime}</span>
+            <span suppressHydrationWarning>Scheduled for {formattedDate} at {formattedTime}</span>
           </div>
         </div>
 

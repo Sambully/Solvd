@@ -418,7 +418,7 @@ export async function getRoomDetails(roomCode: string): Promise<RoomDetailsRespo
     const trajectoryTests = completedOrAttemptedExams.map((re, idx) => ({
       index: idx + 1,
       title: re.exam.title,
-      date: new Date(re.scheduledAt).toLocaleDateString([], { month: "short", day: "numeric" }),
+      date: new Date(re.scheduledAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
     }));
 
     const studentTrajectories: StudentTrajectorySeries[] = members.map((member) => {

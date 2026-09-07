@@ -143,7 +143,11 @@ export async function POST(req: Request) {
     );
   }
 
-  const durationMinutes = generated.questions.length; // ~1 min per question for NEET pace
+  const rawDuration = Number(formData.get("durationMinutes"));
+  const durationMinutes =
+    Number.isInteger(rawDuration) && rawDuration > 0
+      ? rawDuration
+      : 180; // Default 3 hours (180 minutes) for NEET mock standard
 
   const summaryFileName =
     inputFiles.length === 1

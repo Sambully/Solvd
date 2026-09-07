@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -15,11 +15,11 @@ import {
   Calendar,
   Layers,
   Crown,
-  Sparkles,
   FileCheck2,
-  AlertCircle,
+  Lock,
+  CalendarClock,
 } from "lucide-react";
-import type { RoomDetailsResponse, RoomTestItem, RoomMemberInfo } from "@/lib/roomActions";
+import type { RoomDetailsResponse, RoomTestItem } from "@/lib/roomActions";
 import RoomMultiTestTrendChart from "@/components/room/RoomMultiTestTrendChart";
 import CreateRoomTestModal from "@/components/room/CreateRoomTestModal";
 
@@ -34,9 +34,30 @@ function RoomTestCard({
   test: RoomTestItem;
   roomCode: string;
 }) {
-  const isScheduled = test.status === "SCHEDULED" && !test.isLive;
-  const isLive = test.isLive;
-  const isCompleted = test.status === "COMPLETED";
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const scheduledMs = new Date(test.scheduledAt).getTime();
+  const durationMs = (test.durationMinutes + 15) * 60 * 1000;
+  const isPastScheduled = now >= scheduledMs;
+  const isWindowExpired = now > scheduledMs + durationMs;
+
+  const isLive = !test.hasUserSubmitted && !isWindowExpired && isPastScheduled;
+  const isUpcoming = !isPastScheduled && !test.hasUserSubmitted;
+
+  const diffMs = Math.max(0, scheduledMs - now);
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  const diffSeconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+  const countdownText =
+    diffHours > 0
+      ? `${diffHours}h ${diffMinutes}m ${diffSeconds}s`
+      : `${diffMinutes}m ${diffSeconds}s`;
 
   const scheduledDate = new Date(test.scheduledAt);
   const formattedDate = scheduledDate.toLocaleDateString([], {
@@ -53,21 +74,21 @@ function RoomTestCard({
       <div>
         <div className="flex items-center justify-between gap-2">
           {isLive ? (
-            <span className="flex items-center gap-1.5 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               Live Exam
             </span>
-          ) : isCompleted ? (
-            <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-              Finished
+          ) : isUpcoming ? (
+            <span className="flex items-center gap-1 rounded-md bg-blue-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+              <Clock className="h-3 w-3" /> Upcoming Test
             </span>
           ) : (
-            <span className="flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-              <Clock className="h-3 w-3" /> Scheduled
+            <span className="rounded-md bg-zinc-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+              Finished
             </span>
           )}
 
-          <span className="text-[10px] text-zinc-400">
+          <span className="text-[10px] font-medium text-zinc-400">
             {test.finishedCount}/{test.totalParticipants} Submitted
           </span>
         </div>
@@ -86,7 +107,7 @@ function RoomTestCard({
           <div className="flex items-center gap-2">
             <Clock className="h-3.5 w-3.5 text-indigo-500" />
             <span>
-              {test.durationMinutes} Mins · {test.questionCount} Questions
+              {test.durationMinutes} Mins Â· {test.questionCount} Questions
             </span>
           </div>
         </div>
@@ -95,32 +116,37 @@ function RoomTestCard({
       <div className="mt-5 border-t border-black/[.06] pt-3.5 dark:border-white/[.08]">
         {test.hasUserSubmitted ? (
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
               Score: {test.userScore !== null && test.userScore > 0 ? `+${test.userScore}` : test.userScore ?? 0}
             </span>
             <Link
               href={`/dashboard/room/${roomCode}/test/${test.examId}`}
               className="inline-flex items-center gap-1.5 rounded-xl bg-zinc-100 px-3.5 py-1.5 text-xs font-bold text-black hover:bg-zinc-200 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
             >
-              <Trophy className="h-3 w-3" />
-              Leaderboard
+              <Trophy className="h-3.5 w-3.5 text-amber-500" />
+              Leaderboard & Breakdown
             </Link>
           </div>
         ) : isLive ? (
           <Link
             href={`/dashboard/room/${roomCode}/test/${test.examId}`}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-colors"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-colors"
           >
             <Play className="h-3.5 w-3.5 fill-current" />
-            Take Test Now
+            Take Test Now ({test.durationMinutes}m)
           </Link>
+        ) : isUpcoming ? (
+          <div className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-black/[.08] bg-zinc-50 py-2.5 text-xs font-semibold text-zinc-500 dark:border-white/[.1] dark:bg-zinc-900/60 dark:text-zinc-400">
+            <Lock className="h-3.5 w-3.5 text-zinc-400" />
+            <span>Starts in <strong>{countdownText}</strong></span>
+          </div>
         ) : (
           <Link
             href={`/dashboard/room/${roomCode}/test/${test.examId}`}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-black/[.15] bg-white px-4 py-2 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 dark:border-white/[.2] dark:bg-zinc-900 dark:text-zinc-200"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-black/[.1] bg-zinc-50 px-4 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 dark:border-white/[.1] dark:bg-zinc-900 dark:text-zinc-300"
           >
-            <Clock className="h-3 w-3 text-zinc-400" />
-            Waiting Lobby
+            <Trophy className="h-3.5 w-3.5 text-amber-500" />
+            View Results
           </Link>
         )}
       </div>
@@ -132,18 +158,21 @@ export default function PersistentRoomHubClient({
   initialData,
 }: PersistentRoomHubClientProps) {
   const router = useRouter();
+  const [room, setRoom] = useState(initialData);
+  const [isCreateTestOpen, setIsCreateTestOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [isCreateTestOpen, setIsCreateTestOpen] = useState(false);
 
-  const room = initialData;
+  useEffect(() => {
+    setRoom(initialData);
+  }, [initialData]);
 
   const shareUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/dashboard/room/${room.roomCode}`
-      : `https://solvd.app/dashboard/room/${room.roomCode}`;
+      : `/dashboard/room/${room.roomCode}`;
 
-  const shareText = `Join my NEET study group "${room.name}" on Solvd! Room Code: ${room.roomCode}. Join here: ${shareUrl}`;
+  const shareText = `Join my NEET Study Circle "${room.name}" on Solvd! Enter room code: ${room.roomCode} or join directly: ${shareUrl}`;
 
   function copyCode() {
     navigator.clipboard.writeText(room.roomCode);
@@ -170,27 +199,29 @@ export default function PersistentRoomHubClient({
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-md bg-indigo-50 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 mb-2">
               <Users className="h-3.5 w-3.5" />
-              Persistent Study Circle
+              NEET Study Circle
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-black dark:text-zinc-50">
               {room.name}
             </h1>
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Hosted by <strong>{room.hostName}</strong> · {room.members.length} Member{room.members.length > 1 ? "s" : ""} · {room.tests.length} Scheduled Test{room.tests.length > 1 ? "s" : ""}
+              Hosted by <strong>{room.hostName}</strong> Â· {room.members.length} Member{room.members.length > 1 ? "s" : ""} Â· {room.tests.length} Scheduled Test{room.tests.length > 1 ? "s" : ""}
             </p>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsCreateTestOpen(true)}
-              className="flex items-center gap-2 rounded-xl bg-black px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-            >
-              <Plus className="h-4 w-4" />
-              Add Test to Room
-            </button>
-          </div>
+          {/* Host Action Buttons */}
+          {room.isHost && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsCreateTestOpen(true)}
+                className="flex items-center gap-2 rounded-xl bg-black px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              >
+                <Plus className="h-4 w-4" />
+                Schedule Mock Test
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Shareable Code Strip */}
@@ -250,36 +281,54 @@ export default function PersistentRoomHubClient({
             </h3>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsCreateTestOpen(true)}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add Another Test
-          </button>
-        </div>
-
-        {room.tests.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-black/[.08] bg-white p-10 text-center shadow-xs dark:border-white/[.1] dark:bg-zinc-950">
-            <Layers className="h-7 w-7 text-zinc-400" />
-            <div>
-              <h4 className="text-sm font-bold text-black dark:text-zinc-100">
-                No Tests Scheduled Yet
-              </h4>
-              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                Upload your chapter notes, textbook PDF, or formulas to schedule the first mock test for your group.
-              </p>
-            </div>
+          {room.isHost && (
             <button
               type="button"
               onClick={() => setIsCreateTestOpen(true)}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-black px-4 py-2 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
             >
               <Plus className="h-3.5 w-3.5" />
-              Add First Test
+              Schedule Another Test
             </button>
-          </div>
+          )}
+        </div>
+
+        {room.tests.length === 0 ? (
+          room.isHost ? (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-black/[.08] bg-white p-10 text-center shadow-xs dark:border-white/[.1] dark:bg-zinc-950">
+              <Layers className="h-7 w-7 text-zinc-400" />
+              <div>
+                <h4 className="text-base font-bold text-black dark:text-zinc-100">
+                  No Tests Scheduled Yet
+                </h4>
+                <p className="mt-1 max-w-md text-xs text-zinc-500 dark:text-zinc-400">
+                  Upload your chapter notes, textbook PDF, or formulas to schedule the first 3-hour mock test for your group.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateTestOpen(true)}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-black px-4 py-2.5 text-xs font-semibold text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Schedule First Mock Test
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-black/[.08] bg-white p-10 text-center shadow-xs dark:border-white/[.1] dark:bg-zinc-950">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
+                <CalendarClock className="h-6 w-6" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-black dark:text-zinc-100">
+                  No Upcoming Test
+                </h4>
+                <p className="mt-1 max-w-md text-xs text-zinc-500 dark:text-zinc-400">
+                  Your room host, <strong>{room.hostName}</strong>, has not scheduled a mock test yet. As soon as a test is created, it will appear here with the countdown timer!
+                </p>
+              </div>
+            </div>
+          )
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {room.tests.map((test) => (

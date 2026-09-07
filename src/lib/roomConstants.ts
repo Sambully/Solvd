@@ -1,5 +1,3 @@
-"use client";
-
 export const STUDENT_COLOR_PALETTE = [
   { stroke: "#6366f1", bg: "#6366f1", label: "Indigo" },
   { stroke: "#10b981", bg: "#10b981", label: "Emerald" },

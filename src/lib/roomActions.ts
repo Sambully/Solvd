@@ -134,17 +134,15 @@ export async function createStudyRoom(
 }
 
 /**
- * Joins a persistent study group room via its short code (e.g. SLV-4X9K).
+ * Ensures a user is registered as a participant in a room without triggering revalidatePath (safe for server component rendering).
  */
-export async function joinRoom(
-  rawRoomCode: string
-): Promise<{ success: boolean; roomCode?: string; error?: string }> {
+export async function ensureRoomParticipant(
+  rawRoomCode: string,
+  userId: string
+): Promise<{ success: boolean; roomId?: string; error?: string }> {
   try {
-    const user = await getOrCreateUser();
-    if (!user) return { success: false, error: "Unauthorized" };
-
     const code = rawRoomCode.trim().toUpperCase();
-    if (!code) return { success: false, error: "Please enter a valid room code." };
+    if (!code) return { success: false, error: "Invalid room code." };
 
     const room = await prisma.testRoom.findUnique({
       where: { roomCode: code },
@@ -157,19 +155,44 @@ export async function joinRoom(
       return { success: false, error: "No room found with this code. Please verify and try again." };
     }
 
-    const alreadyJoined = room.participants.some((p) => p.userId === user.id);
+    const alreadyJoined = room.participants.some((p) => p.userId === userId);
     if (!alreadyJoined) {
       await prisma.roomParticipant.create({
         data: {
           roomId: room.id,
-          userId: user.id,
+          userId,
         },
       });
     }
 
+    return { success: true, roomId: room.id };
+  } catch (err) {
+    console.error("Failed to ensure room participant:", err);
+    return { success: false, error: "Failed to verify room participant." };
+  }
+}
+
+/**
+ * Joins a persistent study group room via its short code (e.g. SLV-4X9K).
+ */
+export async function joinRoom(
+  rawRoomCode: string
+): Promise<{ success: boolean; roomCode?: string; error?: string }> {
+  try {
+    const user = await getOrCreateUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    const code = rawRoomCode.trim().toUpperCase();
+    if (!code) return { success: false, error: "Please enter a valid room code." };
+
+    const res = await ensureRoomParticipant(code, user.id);
+    if (!res.success) {
+      return { success: false, error: res.error };
+    }
+
     revalidatePath("/dashboard/room");
     revalidatePath(`/dashboard/room/${code}`);
-    return { success: true, roomCode: room.roomCode };
+    return { success: true, roomCode: code };
   } catch (err) {
     console.error("Failed to join room:", err);
     return { success: false, error: "Failed to join room. Please try again." };

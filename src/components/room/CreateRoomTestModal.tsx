@@ -43,6 +43,13 @@ function formatBytes(bytes: number): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
+const DURATION_OPTIONS = [
+  { value: 180, label: "3 Hours (Full NEET Mock)" },
+  { value: 60, label: "1 Hour (Quick Test)" },
+  { value: 90, label: "1.5 Hours (Sectional)" },
+  { value: 200, label: "3h 20m (NTA Standard)" },
+];
+
 interface CreateRoomTestModalProps {
   isOpen: boolean;
   roomId: string;
@@ -63,6 +70,7 @@ export default function CreateRoomTestModal({
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [questionCount, setQuestionCount] = useState<number>(15);
+  const [durationMinutes, setDurationMinutes] = useState<number>(180);
   const [subject, setSubject] = useState<string>("Auto / Mixed");
   const [difficulty, setDifficulty] = useState<ExamCustomizationOptions["difficulty"]>("MIXED");
   const [showOptions, setShowOptions] = useState(false);
@@ -150,6 +158,7 @@ export default function CreateRoomTestModal({
         body.append("files", file);
       }
       body.append("questionCount", questionCount.toString());
+      body.append("durationMinutes", durationMinutes.toString());
       body.append("subject", subject === "Auto / Mixed" ? "Mixed" : subject);
       body.append("difficulty", difficulty || "MIXED");
 
@@ -344,27 +353,49 @@ export default function CreateRoomTestModal({
 
             {showOptions && (
               <div className="flex flex-col gap-4 rounded-xl border border-black/[.08] bg-zinc-50/40 p-4 dark:border-white/[.08] dark:bg-zinc-900/30 animate-in fade-in duration-150">
-                <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 block mb-1.5">
-                    Question Count
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {QUESTION_COUNT_OPTIONS.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setQuestionCount(c)}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-                          questionCount === c
-                            ? "bg-black text-white dark:bg-white dark:text-black"
-                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
-                        }`}
-                      >
-                        {c} Questions
-                      </button>
-                    ))}
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 block mb-1.5">
+                      Question Count
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {QUESTION_COUNT_OPTIONS.map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setQuestionCount(c)}
+                          className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                            questionCount === c
+                              ? "bg-black text-white dark:bg-white dark:text-black"
+                              : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+                          }`}
+                        >
+                          {c} Questions
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 block mb-1.5">
+                      Exam Duration
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {DURATION_OPTIONS.map((d) => (
+                        <button
+                          key={d.value}
+                          type="button"
+                          onClick={() => setDurationMinutes(d.value)}
+                          className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+                            durationMinutes === d.value
+                              ? "bg-black text-white dark:bg-white dark:text-black"
+                              : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300"
+                          }`}
+                        >
+                          {d.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
                 <div>
                   <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 block mb-1.5">

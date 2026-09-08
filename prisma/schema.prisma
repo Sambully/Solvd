@@ -160,19 +160,21 @@ model TestRoom {
 }
 
 model RoomExam {
-  id          String     @id @default(uuid())
-  roomId      String
-  room        TestRoom   @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  examId      String
-  exam        Exam       @relation(fields: [examId], references: [id], onDelete: Cascade)
-  scheduledAt DateTime   @default(now())
-  status      RoomStatus @default(SCHEDULED)
-  createdAt   DateTime   @default(now())
+  id             String     @id @default(uuid())
+  roomId         String
+  room           TestRoom   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  examId         String
+  exam           Exam       @relation(fields: [examId], references: [id], onDelete: Cascade)
+  scheduledAt    DateTime   @default(now())
+  reminderSentAt DateTime?
+  status         RoomStatus @default(SCHEDULED)
+  createdAt      DateTime   @default(now())
 
   attempts Attempt[]
 
   @@index([roomId])
   @@index([examId])
+  @@index([scheduledAt])
   @@map("room_exams")
 }
 

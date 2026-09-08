@@ -22,6 +22,7 @@ import {
 import type { RoomDetailsResponse, RoomTestItem } from "@/lib/roomActions";
 import RoomMultiTestTrendChart from "@/components/room/RoomMultiTestTrendChart";
 import CreateRoomTestModal from "@/components/room/CreateRoomTestModal";
+import UpcomingTestAlertBanner from "@/components/room/UpcomingTestAlertBanner";
 
 interface PersistentRoomHubClientProps {
   initialData: NonNullable<RoomDetailsResponse["room"]>;
@@ -268,6 +269,27 @@ export default function PersistentRoomHubClient({
           </div>
         </div>
       </div>
+
+      {/* 15-Minute Countdown & Live Test Alert Banner */}
+      {(() => {
+        const upcomingAlertTest = room.tests.find((t) => {
+          if (t.hasUserSubmitted || t.status === "COMPLETED") return false;
+          const schedMs = new Date(t.scheduledAt).getTime();
+          const diff = schedMs - Date.now();
+          const durationMs = (t.durationMinutes + 15) * 60 * 1000;
+          return diff <= 15 * 60 * 1000 && Date.now() < schedMs + durationMs;
+        });
+
+        if (!upcomingAlertTest) return null;
+
+        return (
+          <UpcomingTestAlertBanner
+            roomCode={room.roomCode}
+            roomName={room.name}
+            test={upcomingAlertTest}
+          />
+        );
+      })()}
 
       {/* Multi-Test Performance Variation Trajectory Graph */}
       <RoomMultiTestTrendChart

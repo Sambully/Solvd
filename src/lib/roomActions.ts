@@ -239,6 +239,20 @@ export async function createTestInRoom(
       },
     });
 
+    // If the test is scheduled to start in <= 15 minutes, trigger email reminders immediately!
+    const diffMs = scheduledAt.getTime() - Date.now();
+    if (diffMs <= 15 * 60 * 1000) {
+      try {
+        const { dispatchPendingReminders } = await import("@/app/api/cron/reminders/route");
+        // Fire and forget or await dispatch
+        dispatchPendingReminders().catch((err) => {
+          console.error("Failed to auto-dispatch immediate test reminders:", err);
+        });
+      } catch (err) {
+        console.error("Error importing reminder dispatcher:", err);
+      }
+    }
+
     revalidatePath(`/dashboard/room/${room.roomCode}`);
     return { success: true, roomExamId: roomExam.id };
   } catch (err) {

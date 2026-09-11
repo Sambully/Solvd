@@ -171,7 +171,7 @@ export default function GenerateExamCard() {
   const isGenerating = status === "generating";
 
   return (
-    <div className="flex flex-col rounded-2xl border border-black/[.08] bg-white p-6 shadow-sm dark:border-white/[.1] dark:bg-zinc-950 lg:col-span-2">
+    <div className="flex flex-col rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-xs text-slate-900">
       <input
         ref={inputRef}
         type="file"
@@ -183,48 +183,53 @@ export default function GenerateExamCard() {
 
       {isGenerating ? (
         <div className="flex flex-col items-center justify-center gap-5 py-12 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-900 shadow-inner">
-            <Loader2 className="h-7 w-7 animate-spin text-black dark:text-white" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 shadow-inner">
+            <Loader2 className="h-7 w-7 animate-spin text-slate-900" />
           </div>
 
           <div className="max-w-md">
-            <h3 className="text-xl font-bold tracking-tight text-black dark:text-zinc-50">
+            <h3 className="text-xl font-bold tracking-tight text-slate-950">
               Generating your NEET CBT
             </h3>
-            <p className="mt-1.5 min-h-6 text-sm text-zinc-500 transition-all dark:text-zinc-400">
+            <p className="mt-1.5 min-h-6 text-sm text-slate-500 transition-all">
               {LOADING_MESSAGES[msgIndex]}
             </p>
           </div>
 
           {/* Indeterminate smooth progress bar */}
-          <div className="h-2 w-full max-w-md overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-            <div className="solvd-progress h-full w-1/3 rounded-full bg-black dark:bg-white" />
+          <div className="h-2 w-full max-w-md overflow-hidden rounded-full bg-slate-100">
+            <div className="solvd-progress h-full w-1/3 rounded-full bg-slate-900" />
           </div>
 
           {/* Staged files count */}
-          <p className="flex items-center gap-2 text-xs text-zinc-400">
-            <FileCheck className="h-4 w-4 text-emerald-500" />
+          <p className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+            <FileCheck className="h-4 w-4 text-emerald-600" />
             Analyzing {files.length} file{files.length > 1 ? "s" : ""} · {questionCount} NEET MCQs
           </p>
         </div>
       ) : (
         <div className="flex flex-col gap-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
             <div>
-              <h2 className="text-lg font-bold tracking-tight text-black dark:text-zinc-50">
-                Generate Custom NEET Mock
-              </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Upload PDFs, scanned notes, or chapter photos to build a timed NEET CBT test.
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-base font-extrabold tracking-tight text-slate-950 flex items-center gap-1.5">
+                  <span className="text-amber-500">⚡</span> Instant Mock Generator
+                </span>
+                <span className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-indigo-700">
+                  Gemini 2.5 CBT Engine
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-slate-500 max-w-2xl">
+                Drag & drop handwritten notes or NCERT chapters. Solvd synthesizes high-yield questions with NTA penalty weighting in seconds.
               </p>
             </div>
             <button
               onClick={() => setShowOptions(!showOptions)}
-              className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all self-start sm:self-auto ${
                 showOptions
-                  ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                  : "border-black/[.1] text-zinc-600 hover:bg-zinc-50 dark:border-white/[.15] dark:text-zinc-300 dark:hover:bg-zinc-900"
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
               }`}
             >
               <Sliders className="h-3.5 w-3.5" />
@@ -232,40 +237,48 @@ export default function GenerateExamCard() {
             </button>
           </div>
 
-          {/* Drag and Drop Zone */}
+          {/* Drag and Drop Zone matching image 2 */}
           <div
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
             onClick={() => inputRef.current?.click()}
-            className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-6 text-center transition-all ${
+            className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-8 text-center transition-all ${
               isDragging
-                ? "border-black bg-zinc-50 dark:border-white dark:bg-zinc-900"
-                : "border-black/[.12] hover:border-black/[.25] hover:bg-zinc-50/50 dark:border-white/[.15] dark:hover:border-white/[.3] dark:hover:bg-zinc-900/30"
+                ? "border-indigo-500 bg-indigo-50/50"
+                : "border-slate-200/90 bg-slate-50/40 hover:border-slate-300 hover:bg-slate-50/80"
             }`}
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-900">
-              <UploadCloud className="h-6 w-6 text-zinc-600 dark:text-zinc-400" />
+            {/* OCR Badge on Cloud Icon */}
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo-100 bg-white shadow-xs">
+              <UploadCloud className="h-6 w-6 text-indigo-600" />
+              <span className="absolute -top-1.5 -right-1.5 rounded bg-indigo-600 px-1 py-0.2 text-[9px] font-black uppercase text-white shadow-2xs">
+                OCR
+              </span>
             </div>
 
             <div>
-              <p className="text-sm font-semibold text-black dark:text-zinc-50">
-                Click to browse or drop your notes & papers here
+              <p className="text-sm font-bold text-slate-900">
+                Click to upload or drag & drop handwritten notes
               </p>
-              <p className="mt-0.5 text-xs text-zinc-400">
-                Supports single/multiple PDFs, JPG, PNG, WEBP (Up to 30 MB)
+              <p className="mt-0.5 text-xs text-slate-400">
+                Supported files: PDF, JPG, PNG (Max 25MB)
               </p>
+              <div className="mt-2.5 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900">
+                <span className="text-amber-500">⚡</span>
+                <span>Generates {questionCount}-question custom NTA module</span>
+              </div>
             </div>
           </div>
 
           {/* Staged Files List */}
           {files.length > 0 && (
             <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-600">
                 <span>Selected Files ({files.length})</span>
                 <button
                   onClick={() => inputRef.current?.click()}
-                  className="flex items-center gap-1 text-black hover:underline dark:text-zinc-50"
+                  className="flex items-center gap-1 text-indigo-600 hover:underline font-bold"
                 >
                   <Plus className="h-3.5 w-3.5" /> Add more
                 </button>
@@ -277,7 +290,7 @@ export default function GenerateExamCard() {
                   return (
                     <div
                       key={`${file.name}-${idx}`}
-                      className="flex items-center justify-between rounded-lg border border-black/[.06] bg-zinc-50/80 px-3 py-2 text-xs dark:border-white/[.08] dark:bg-zinc-900/50"
+                      className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50 px-3.5 py-2 text-xs"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         {isPdf ? (
@@ -285,10 +298,10 @@ export default function GenerateExamCard() {
                         ) : (
                           <ImageIcon className="h-4 w-4 shrink-0 text-blue-500" />
                         )}
-                        <span className="truncate font-medium text-black dark:text-zinc-200">
+                        <span className="truncate font-semibold text-slate-900">
                           {file.name}
                         </span>
-                        <span className="shrink-0 text-zinc-400">
+                        <span className="shrink-0 text-slate-400 font-mono">
                           ({formatBytes(file.size)})
                         </span>
                       </div>
@@ -297,7 +310,7 @@ export default function GenerateExamCard() {
                           e.stopPropagation();
                           removeFile(idx);
                         }}
-                        className="ml-2 rounded-md p-1 text-zinc-400 hover:bg-zinc-200 hover:text-black dark:hover:bg-zinc-800 dark:hover:text-white transition-colors"
+                        className="ml-2 rounded-md p-1 text-slate-400 hover:bg-slate-200 hover:text-slate-900 transition-colors"
                         title="Remove file"
                       >
                         <X className="h-3.5 w-3.5" />
@@ -311,13 +324,13 @@ export default function GenerateExamCard() {
 
           {/* Exam Customization Drawer */}
           {showOptions && (
-            <div className="rounded-xl border border-black/[.08] bg-zinc-50/50 p-4 dark:border-white/[.08] dark:bg-zinc-900/30 flex flex-col gap-4 animate-in fade-in duration-200">
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-5 flex flex-col gap-4 animate-in fade-in duration-200">
               {/* Question Count */}
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   Question Count
                 </label>
-                <div className="mt-2 grid grid-cols-5 gap-2">
+                <div className="mt-2 grid grid-cols-2 sm:grid-cols-5 gap-2">
                   {QUESTION_COUNT_OPTIONS.map((opt) => {
                     const active = questionCount === opt.value;
                     return (
@@ -325,10 +338,10 @@ export default function GenerateExamCard() {
                         key={opt.value}
                         type="button"
                         onClick={() => setQuestionCount(opt.value)}
-                        className={`flex flex-col items-center justify-center rounded-lg border py-2 px-1 text-center transition-all ${
+                        className={`flex flex-col items-center justify-center rounded-xl border py-2 px-1 text-center transition-all ${
                           active
-                            ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black font-semibold"
-                            : "border-black/[.1] bg-white text-zinc-700 hover:bg-zinc-50 dark:border-white/[.1] dark:bg-zinc-900 dark:text-zinc-300"
+                            ? "border-slate-900 bg-slate-900 text-white font-bold shadow-xs"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                         }`}
                       >
                         <span className="text-xs font-bold">{opt.label}</span>
@@ -341,7 +354,7 @@ export default function GenerateExamCard() {
 
               {/* Subject Focus */}
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   Subject Focus
                 </label>
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -352,10 +365,10 @@ export default function GenerateExamCard() {
                         key={subj}
                         type="button"
                         onClick={() => setSubject(subj)}
-                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                        className={`rounded-xl border px-3.5 py-1.5 text-xs font-bold transition-all ${
                           active
-                            ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                            : "border-black/[.1] bg-white text-zinc-700 hover:bg-zinc-50 dark:border-white/[.1] dark:bg-zinc-900 dark:text-zinc-300"
+                            ? "border-slate-900 bg-slate-900 text-white shadow-xs"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                         }`}
                       >
                         {subj}
@@ -367,7 +380,7 @@ export default function GenerateExamCard() {
 
               {/* Difficulty Level */}
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">
                   Difficulty Calibration
                 </label>
                 <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -378,10 +391,10 @@ export default function GenerateExamCard() {
                         key={diff.value}
                         type="button"
                         onClick={() => setDifficulty(diff.value)}
-                        className={`flex flex-col items-start rounded-lg border p-2.5 text-left transition-all ${
+                        className={`flex flex-col items-start rounded-xl border p-3 text-left transition-all ${
                           active
-                            ? "border-black bg-black text-white dark:border-white dark:bg-white dark:text-black"
-                            : "border-black/[.1] bg-white text-zinc-700 hover:bg-zinc-50 dark:border-white/[.1] dark:bg-zinc-900 dark:text-zinc-300"
+                            ? "border-slate-900 bg-slate-900 text-white shadow-xs"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                         }`}
                       >
                         <span className="text-xs font-bold">{diff.label}</span>
@@ -396,7 +409,7 @@ export default function GenerateExamCard() {
 
           {/* Error Message */}
           {error && (
-            <div className="flex items-center gap-2.5 rounded-xl border border-red-500/20 bg-red-50/80 p-3 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">
+            <div className="flex items-center gap-2.5 rounded-xl border border-red-500/20 bg-red-50 p-3 text-xs font-semibold text-red-700">
               <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
               <span>{error}</span>
             </div>
@@ -404,7 +417,7 @@ export default function GenerateExamCard() {
 
           {/* Action Button */}
           <div className="flex items-center justify-between pt-1">
-            <span className="text-xs text-zinc-400">
+            <span className="text-xs text-slate-400 font-medium">
               {files.length > 0
                 ? `${files.length} file(s) · ${questionCount} Questions (${questionCount * 4} Marks)`
                 : "No files chosen yet"}
@@ -413,9 +426,9 @@ export default function GenerateExamCard() {
             <button
               onClick={handleGenerate}
               disabled={files.length === 0}
-              className="flex items-center gap-2 rounded-xl bg-black px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+              className="flex items-center gap-2 rounded-xl bg-[#0f172a] px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed active:scale-98"
             >
-              <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
               Generate NEET Exam
             </button>
           </div>

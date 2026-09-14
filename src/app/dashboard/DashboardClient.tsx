@@ -18,6 +18,7 @@ import {
   Zap,
   BookOpen,
   Loader2,
+  Users,
 } from "lucide-react";
 import GenerateExamCard from "@/components/GenerateExamCard";
 import type { DashboardFullData } from "@/lib/dashboardData";
@@ -244,67 +245,55 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
         </div>
       </div>
 
-      {/* 4. Synchronized Cohort Live Card (Exact Styling from Image 2) */}
-      <div className="relative overflow-hidden rounded-2xl border border-amber-200/90 bg-gradient-to-r from-amber-50/90 via-[#fffdfa] to-amber-50/70 p-5 sm:p-6 shadow-xs">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded bg-amber-300 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-950">
-                SYNCHRONIZED COHORT
-              </span>
-              <span className="text-xs font-bold text-slate-700">
-                ● Room: {data.upcomingCohort?.roomName ?? "AIIMS 2026 Focus Circle"}
-              </span>
-            </div>
-
-            <h3 className="mt-2 text-xl font-extrabold text-slate-950">
-              {data.upcomingCohort?.examTitle ?? "Full Syllabus Mega Mock #04"}
-            </h3>
-
-            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-600">
-              {/* Avatars */}
-              <div className="flex -space-x-1.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white ring-2 ring-white">
-                  AK
+      {/* 4. Synchronized Cohort Live Card (Shows ONLY when a real test is scheduled in a joined room) */}
+      {data.upcomingCohort && (
+        <div className="relative overflow-hidden rounded-2xl border border-amber-200/90 bg-gradient-to-r from-amber-50/90 via-[#fffdfa] to-amber-50/70 p-5 sm:p-6 shadow-xs animate-in fade-in duration-300">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded bg-amber-300 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-950">
+                  SYNCHRONIZED COHORT
                 </span>
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white ring-2 ring-white">
-                  RS
-                </span>
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-white ring-2 ring-white">
-                  TS
-                </span>
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-[8px] font-bold text-white ring-2 ring-white">
-                  +3
+                <span className="text-xs font-bold text-slate-700">
+                  ● Room: {data.upcomingCohort.roomName}
                 </span>
               </div>
-              <span>Gmail notification sent to {data.upcomingCohort?.memberCount ?? 6} circle members</span>
-              <span>•</span>
-              <span className="flex items-center gap-1 font-medium text-slate-500">
-                <Lock className="h-3 w-3" /> Section timer locked
-              </span>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-3 self-end sm:self-center">
-            <div className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-white/90 px-3.5 py-2 font-mono text-xs font-bold text-amber-900 shadow-2xs">
-              <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-              <span>{countdownText}</span>
+              <h3 className="mt-2 text-xl font-extrabold text-slate-950">
+                {data.upcomingCohort.examTitle}
+              </h3>
+
+              <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-600">
+                <span className="inline-flex items-center gap-1 font-semibold text-amber-900">
+                  <Users className="h-3.5 w-3.5 text-amber-700" />
+                  {data.upcomingCohort.memberCount} circle member{data.upcomingCohort.memberCount > 1 ? "s" : ""}
+                </span>
+                <span>•</span>
+                <span>Gmail reminder sent 15 mins prior</span>
+                <span>•</span>
+                <span className="flex items-center gap-1 font-medium text-slate-500">
+                  <Lock className="h-3 w-3" /> Section timer locked
+                </span>
+              </div>
             </div>
 
-            <Link
-              href={
-                data.upcomingCohort
-                  ? `/dashboard/room/${data.upcomingCohort.roomCode}/test/${data.upcomingCohort.examTitle}`
-                  : "/dashboard/room"
-              }
-              className="flex items-center gap-1.5 rounded-xl bg-[#0f172a] px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-slate-800 active:scale-98"
-            >
-              <span>Enter Waiting Lobby</span>
-              <ChevronRight className="h-3.5 w-3.5 text-amber-400" />
-            </Link>
+            <div className="flex items-center gap-3 self-end sm:self-center">
+              <div className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-white/90 px-3.5 py-2 font-mono text-xs font-bold text-amber-900 shadow-2xs">
+                <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <span>{countdownText}</span>
+              </div>
+
+              <Link
+                href={`/dashboard/room/${data.upcomingCohort.roomCode}/test/${data.upcomingCohort.roomExamId}`}
+                className="flex items-center gap-1.5 rounded-xl bg-[#0f172a] px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-slate-800 active:scale-98"
+              >
+                <span>Enter Waiting Lobby</span>
+                <ChevronRight className="h-3.5 w-3.5 text-amber-400" />
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 5. Instant Mock Generator Section (Full Width, Join Group Removed) */}
       <div id="instant-mock-section" className="w-full">

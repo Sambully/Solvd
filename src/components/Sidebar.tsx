@@ -10,6 +10,7 @@ import {
   BarChart2,
   HelpCircle,
   Zap,
+  BookOpen,
   MoreHorizontal,
 } from "lucide-react";
 
@@ -20,6 +21,7 @@ export default function Sidebar() {
   const navItems = [
     { href: "/dashboard", label: "Home", icon: Home },
     { href: "/tests", label: "Mock Tests", icon: FileText },
+    { href: "/dashboard/question-bank", label: "Question Bank", icon: BookOpen },
     { href: "/dashboard/room", label: "Study Circles", icon: Users },
     { href: "/analytics", label: "Analytics & Ledger", icon: BarChart2 },
     { href: "/dashboard/help", label: "Help & Docs", icon: HelpCircle },

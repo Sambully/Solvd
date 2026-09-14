@@ -13,10 +13,12 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
+  Share2,
 } from "lucide-react";
 import type { RecentExam } from "@/lib/dashboardData";
 import RenameExamModal from "@/components/RenameExamModal";
 import { deleteExam } from "@/lib/examActions";
+import { shareExamToQuestionBank } from "@/lib/questionBankActions";
 
 function formatActivityDate(date: Date) {
   const d = new Date(date);
@@ -64,6 +66,8 @@ export default function ExamCardItem({
   const [title, setTitle] = useState(exam.title);
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [hasShared, setHasShared] = useState(false);
 
   const maxScore = exam.questionCount * 4;
   const isAttempted = Boolean(exam.latestAttemptId);
@@ -81,6 +85,18 @@ export default function ExamCardItem({
     } else {
       alert(res.error || "Failed to delete exam.");
       setIsDeleting(false);
+    }
+  }
+
+  async function handleShare() {
+    setIsSharing(true);
+    const res = await shareExamToQuestionBank(exam.id, title);
+    setIsSharing(false);
+    if (res.success) {
+      setHasShared(true);
+      alert("✅ Test successfully shared to the Community Question Bank!");
+    } else {
+      alert(res.error || "Failed to share test to question bank.");
     }
   }
 
@@ -175,6 +191,26 @@ export default function ExamCardItem({
                 Start Test
               </Link>
             )}
+
+            {/* Share to Question Bank */}
+            <button
+              onClick={handleShare}
+              disabled={isSharing || hasShared}
+              className={`rounded-xl border p-2 text-xs font-semibold transition-colors flex items-center gap-1 ${
+                hasShared
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-black/[.08] text-zinc-500 hover:bg-zinc-100 hover:text-black dark:border-white/[.1] dark:hover:bg-zinc-800 dark:hover:text-white"
+              }`}
+              title="Share test to Community Question Bank"
+            >
+              {isSharing ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : hasShared ? (
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+              ) : (
+                <Share2 className="h-3.5 w-3.5" />
+              )}
+            </button>
 
             {showDelete && (
               <button

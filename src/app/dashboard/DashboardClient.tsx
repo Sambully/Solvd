@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Sparkles,
@@ -15,9 +16,12 @@ import {
   CheckCircle2,
   Lock,
   Zap,
+  BookOpen,
+  Loader2,
 } from "lucide-react";
 import GenerateExamCard from "@/components/GenerateExamCard";
 import type { DashboardFullData } from "@/lib/dashboardData";
+import { startInstantBankExam } from "@/lib/questionBankActions";
 
 interface DashboardClientProps {
   userName: string;
@@ -25,8 +29,25 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({ userName, data }: DashboardClientProps) {
+  const router = useRouter();
   const [filterTab, setFilterTab] = useState<"ALL" | "PHYSICS" | "BOOKMARKED">("ALL");
   const [countdownText, setCountdownText] = useState<string>("14m 18s");
+  const [launchingPreset, setLaunchingPreset] = useState<string | null>(null);
+
+  async function launchPresetExam(moduleId: string, count: number, presetName: string) {
+    setLaunchingPreset(presetName);
+    try {
+      const res = await startInstantBankExam(moduleId, count);
+      if (res.success && res.examId) {
+        router.push(`/dashboard/exam/${res.examId}`);
+      } else {
+        alert(res.error || "Failed to launch preset test.");
+        setLaunchingPreset(null);
+      }
+    } catch {
+      setLaunchingPreset(null);
+    }
+  }
 
   useEffect(() => {
     if (!data.upcomingCohort) return;
@@ -290,47 +311,81 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
         <GenerateExamCard />
       </div>
 
-      {/* 6. Quick Presets Bar below Generator */}
-      <div className="flex flex-wrap items-center gap-2.5 px-1 text-xs">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
-          QUICK PRESETS:
-        </span>
+      {/* 6. Quick Presets Bar below Generator (Powered by Reusable Question Bank) */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 px-1 text-xs">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+            QUICK PRESETS:
+          </span>
 
-        <button
-          type="button"
-          onClick={() => {
-            const el = document.getElementById("instant-mock-section");
-            el?.scrollIntoView({ behavior: "smooth" });
-          }}
-          className="flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/70 px-3 py-1.5 font-bold text-rose-800 hover:bg-rose-100 transition-colors"
-        >
-          <Zap className="h-3 w-3 text-rose-600" />
-          <span>Quick 15-Q Biology Drill</span>
-        </button>
+          <button
+            type="button"
+            disabled={launchingPreset !== null}
+            onClick={() =>
+              launchPresetExam(
+                "curated-bio-genetics-ncert",
+                10,
+                "bio"
+              )
+            }
+            className="flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/80 px-3 py-1.5 font-bold text-rose-800 hover:bg-rose-100 transition-all disabled:opacity-50 active:scale-98"
+          >
+            {launchingPreset === "bio" ? (
+              <Loader2 className="h-3 w-3 animate-spin text-rose-600" />
+            ) : (
+              <Zap className="h-3 w-3 text-rose-600" />
+            )}
+            <span>⚡ Quick 15-Q Biology Drill</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => {
-            const el = document.getElementById("instant-mock-section");
-            el?.scrollIntoView({ behavior: "smooth" });
-          }}
-          className="flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 px-3 py-1.5 font-bold text-blue-800 hover:bg-blue-100 transition-colors"
-        >
-          <FileText className="h-3 w-3 text-blue-600" />
-          <span>Full NTA 180-Q Mock</span>
-        </button>
+          <button
+            type="button"
+            disabled={launchingPreset !== null}
+            onClick={() =>
+              launchPresetExam(
+                "curated-pyq-full-neet-drill",
+                4,
+                "pyq"
+              )
+            }
+            className="flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/80 px-3 py-1.5 font-bold text-blue-800 hover:bg-blue-100 transition-all disabled:opacity-50 active:scale-98"
+          >
+            {launchingPreset === "pyq" ? (
+              <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
+            ) : (
+              <FileText className="h-3 w-3 text-blue-600" />
+            )}
+            <span>📝 Full NTA PYQ Mock</span>
+          </button>
 
-        <button
-          type="button"
-          onClick={() => {
-            const el = document.getElementById("instant-mock-section");
-            el?.scrollIntoView({ behavior: "smooth" });
-          }}
-          className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-1.5 font-bold text-amber-900 hover:bg-amber-100 transition-colors"
+          <button
+            type="button"
+            disabled={launchingPreset !== null}
+            onClick={() =>
+              launchPresetExam(
+                "curated-phy-mechanics-optics",
+                8,
+                "phy"
+              )
+            }
+            className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-1.5 font-bold text-amber-900 hover:bg-amber-100 transition-all disabled:opacity-50 active:scale-98"
+          >
+            {launchingPreset === "phy" ? (
+              <Loader2 className="h-3 w-3 animate-spin text-amber-600" />
+            ) : (
+              <span>⚠️</span>
+            )}
+            <span>Weak Areas Re-test (Physics Optics)</span>
+          </button>
+        </div>
+
+        <Link
+          href="/dashboard/question-bank"
+          className="flex items-center gap-1 font-bold text-indigo-600 hover:underline"
         >
-          <span>⚠️</span>
-          <span>Weak Areas Re-test (Physics Optics)</span>
-        </button>
+          <BookOpen className="h-3.5 w-3.5" />
+          <span>Browse All Question Banks →</span>
+        </Link>
       </div>
 
       {/* 7. Subject-Wise Precision Radar */}

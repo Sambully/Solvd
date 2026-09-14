@@ -47,12 +47,13 @@ model User {
   name      String
   createdAt DateTime @default(now())
 
-  subscription       Subscription?
-  uploadedMaterials  UploadedMaterial[]
-  exams              Exam[]
-  attempts           Attempt[]
-  hostedTestRooms    TestRoom[]         @relation("HostedTestRooms")
-  roomParticipations RoomParticipant[]
+  subscription        Subscription?
+  uploadedMaterials   UploadedMaterial[]
+  exams               Exam[]
+  attempts            Attempt[]
+  hostedTestRooms     TestRoom[]            @relation("HostedTestRooms")
+  roomParticipations  RoomParticipant[]
+  questionBankModules QuestionBankModule[]
 
   @@map("users")
 }
@@ -190,4 +191,45 @@ model RoomParticipant {
   @@index([roomId])
   @@index([userId])
   @@map("room_participants")
+}
+
+model QuestionBankModule {
+  id            String         @id @default(uuid())
+  title         String
+  description   String
+  subject       String
+  chapter       String?
+  difficulty    Difficulty     @default(MEDIUM)
+  isOfficial    Boolean        @default(true)
+  creatorUserId String?
+  creatorUser   User?          @relation(fields: [creatorUserId], references: [id], onDelete: SetNull)
+  sourceExamId  String?
+  tags          Json
+  createdAt     DateTime       @default(now())
+
+  questions     BankQuestion[]
+
+  @@index([subject])
+  @@index([isOfficial])
+  @@index([creatorUserId])
+  @@map("question_bank_modules")
+}
+
+model BankQuestion {
+  id                 String             @id @default(uuid())
+  moduleId           String
+  module             QuestionBankModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  questionText       String
+  options            Json
+  correctOptionIndex Int
+  explanation        String?
+  diagramSvg         String?
+  difficulty         Difficulty         @default(MEDIUM)
+  subject            String             @default("Mixed")
+  chapter            String?
+  topic              String?
+
+  @@index([moduleId])
+  @@index([subject])
+  @@map("bank_questions")
 }

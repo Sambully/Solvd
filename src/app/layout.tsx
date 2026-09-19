@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Solvd",
-  description: "AI-generated mock exams for NEET aspirants",
+  description: "Computer-based NEET assessment platform and mock exams for medical aspirants",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

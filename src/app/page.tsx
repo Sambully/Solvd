@@ -93,7 +93,7 @@ export default function Home() {
           {/* NTA NEET 2026 Engine Badge */}
           <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/80 bg-amber-50/80 px-4 py-1.5 text-xs font-bold text-amber-900 shadow-2xs backdrop-blur-xs mb-6">
             <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-pulse" />
-            <span>NTA NEET 2026 ENGINE | Gemini 2.5 Flash OCR Active</span>
+            <span>NTA NEET 2026 ENGINE | High-Yield Assessment Engine Active</span>
           </div>
 
           {/* Main Hero Headline */}
@@ -135,7 +135,7 @@ export default function Home() {
           <div className="mt-5 text-xs font-semibold text-zinc-500">
             <span>NTA +4/-1 Marking Scheme</span>
             <span className="mx-2 text-zinc-300">•</span>
-            <span>Gemini 2.5 Multimodal OCR</span>
+            <span>High-Yield Multimodal OCR</span>
             <span className="mx-2 text-zinc-300">•</span>
             <span>Synchronized Room Timers</span>
           </div>
@@ -248,7 +248,7 @@ export default function Home() {
                       <line x1="300" y1="50" x2="300" y2="85" stroke="currentColor" strokeWidth="2" />
                     </svg>
                     <p className="text-[10px] font-mono font-medium text-zinc-400 mt-1">
-                      Fig: NTA-AI Real-Time Rendered High-Yield NCERT Diagram #PHY-EM-802
+                      Fig: NTA-Standard Real-Time Rendered High-Yield NCERT Diagram #PHY-EM-802
                     </p>
                   </div>
 
@@ -401,7 +401,7 @@ export default function Home() {
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
               No manual tagging. No outdated 10-year-old static question banks. Real NEET
-              difficulty calibrated with Gemini 2.5 Multimodal intelligence.
+              difficulty calibrated with high-precision NTA assessment intelligence.
             </p>
 
             {/* Stepper */}
@@ -458,7 +458,7 @@ export default function Home() {
                 </div>
 
                 <div className="mt-6 border-t border-zinc-800 pt-3 flex items-center justify-between text-[10px] text-zinc-500 font-mono">
-                  <span>Gemini 2.5 Multi-turn Extraction</span>
+                  <span>High-Precision Multi-turn Extraction</span>
                   <span className="text-emerald-400 font-bold">99.4% confidence</span>
                 </div>
               </div>
@@ -513,7 +513,7 @@ export default function Home() {
           </div>
 
           <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2">
-            {/* Card 1: Gemini 2.5 Multimodal OCR */}
+            {/* Card 1: High-Yield Multimodal OCR */}
             <div className="rounded-2xl border border-black/[.08] bg-white p-7 shadow-xs transition-all hover:shadow-md">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
                 <Eye className="h-5 w-5" />
@@ -522,7 +522,7 @@ export default function Home() {
                 VISION ENGINE
               </span>
               <h3 className="mt-1 text-lg font-bold text-zinc-950">
-                Gemini 2.5 Multimodal OCR
+                High-Yield Multimodal OCR
               </h3>
               <p className="mt-2 text-xs leading-relaxed text-zinc-600">
                 Feed Solvd your unorganized coaching binders, handwritten margin notes, or
@@ -598,13 +598,13 @@ export default function Home() {
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <span className="mt-4 block text-[10px] font-black uppercase tracking-wider text-amber-600">
-                POST-MORTEM AI
+                POST-MORTEM DIAGNOSTICS
               </span>
               <h3 className="mt-1 text-lg font-bold text-zinc-950">
                 Negative Marking Diagnostic
               </h3>
               <p className="mt-2 text-xs leading-relaxed text-zinc-600">
-                A minus one is worse than zero. Solvd&apos;s AI breaks down every mistake into 3
+                A minus one is worse than zero. Solvd breaks down every mistake into 3
                 distinct categories: Calculation Slips, Misread Negative Words (e.g.
                 &quot;INCORRECT&quot;), or Genuine Conceptual Voids.
               </p>

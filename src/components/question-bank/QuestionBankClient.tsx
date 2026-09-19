@@ -100,7 +100,7 @@ export default function QuestionBankClient({ initialModules }: Props) {
               Instant Practice Question Bank
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
-              Take curated high-yield NEET practice tests instantly with zero wait time and zero AI upload costs. Or explore verified test papers shared by fellow aspirants.
+              Take curated high-yield NEET practice tests instantly with zero wait time and zero manual upload needed. Or explore verified test papers shared by fellow aspirants.
             </p>
           </div>
 

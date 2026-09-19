@@ -52,11 +52,11 @@ const FEATURE_GUIDES: FeatureGuide[] = [
   {
     id: "ai-generator",
     category: "GENERATOR",
-    badge: "AI Mock Generator",
+    badge: "Instant Mock Generator",
     badgeColor: "bg-indigo-50 border-indigo-200 text-indigo-700",
     title: "How to Synthesize Custom NEET Exams from Notes",
     summary:
-      "Transform any handwritten coaching notes, coaching modules, or NCERT chapter PDFs into an authentic NTA NEET practice test using the Gemini 2.5 CBT Engine.",
+      "Transform any handwritten coaching notes, coaching modules, or NCERT chapter PDFs into an authentic NTA NEET practice test using the Solvd CBT Engine.",
     actionLabel: "Generate a Mock Test",
     actionHref: "/dashboard#instant-mock-section",
     tags: ["ocr", "generator", "upload", "handwritten notes", "pdf", "mcq", "custom test", "questions"],
@@ -81,7 +81,7 @@ const FEATURE_GUIDES: FeatureGuide[] = [
         stepNumber: 3,
         title: "Instant Synthesis with NTA Marking",
         description:
-          "Click 'Generate NEET Exam'. In under 20 seconds, the AI extracts key concepts, formulates single-choice MCQs with plausible distractors, formats LaTeX mathematical formulas, and launches your timed exam.",
+          "Click 'Generate NEET Exam'. In under 20 seconds, the engine extracts key concepts, formulates single-choice MCQs with plausible distractors, formats LaTeX mathematical formulas, and launches your timed exam.",
         icon: Sparkles,
         tip: "Every generated question includes full step-by-step verified explanations in the review phase.",
       },
@@ -213,7 +213,7 @@ const FEATURE_GUIDES: FeatureGuide[] = [
 
 const CATEGORY_TABS: Array<{ id: Category; label: string; icon: typeof Sparkles }> = [
   { id: "ALL", label: "All Topics", icon: BookOpen },
-  { id: "GENERATOR", label: "AI Mock Generator", icon: Sparkles },
+  { id: "GENERATOR", label: "Instant Mock Generator", icon: Sparkles },
   { id: "CIRCLES", label: "Study Circles & Alerts", icon: Users },
   { id: "ANALYTICS", label: "Mistake Ledger & AIR", icon: BarChart3 },
   { id: "EXAM_UI", label: "CBT Exam Rules", icon: Monitor },
@@ -260,7 +260,7 @@ export default function HelpClient() {
               Feature Guides & Walkthroughs
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
-              Step-by-step guides on creating AI-powered NEET mock tests from notes, setting up synchronized group study rooms with 15-minute Gmail alerts, and mastering NTA CBT exam rules.
+              Step-by-step guides on creating high-yield NEET mock tests from notes, setting up synchronized group study rooms with 15-minute Gmail alerts, and mastering NTA CBT exam rules.
             </p>
           </div>
 

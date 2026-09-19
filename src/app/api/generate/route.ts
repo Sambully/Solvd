@@ -118,7 +118,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "The Gemini AI rate limit or quota was temporarily reached. Please wait a few seconds and try again.",
+            "The assessment engine server is currently processing high volume. Please wait a few seconds and try again.",
         },
         { status: 429 }
       );
@@ -127,7 +127,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "Generation took too long for the uploaded materials. Try uploading fewer pages or smaller files.",
+            "Processing took too long for the uploaded materials. Try uploading fewer pages or smaller files.",
         },
         { status: 504 }
       );
@@ -136,7 +136,7 @@ export async function POST(req: Request) {
       {
         error:
           raw.includes("Invalid JSON") || raw.includes("schema")
-            ? "AI generation encountered a formatting issue on these materials. Please try generating again or select specific chapter pages."
+            ? "The examination engine encountered a formatting issue on these materials. Please try generating again or select specific chapter pages."
             : "We couldn't generate an exam from these files. Please verify the documents contain readable text, diagrams, or notes and try again.",
       },
       { status: 502 }

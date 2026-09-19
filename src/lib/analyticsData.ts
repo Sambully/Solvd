@@ -84,7 +84,7 @@ export async function getAnalyticsData(userId: string): Promise<AnalyticsSummary
       },
       trends: [],
       insights: [
-        "Take your first NEET mock test to unlock AI-powered accuracy and score analytics.",
+        "Take your first NEET mock test to unlock detailed accuracy and score analytics.",
       ],
     };
   }
@@ -196,7 +196,7 @@ export async function getAnalyticsData(userId: string): Promise<AnalyticsSummary
     hard: calcDiff(diffCounts.HARD),
   };
 
-  // Generate tactical AI study insights
+  // Generate tactical performance insights
   const insights: string[] = [];
 
   if (totalMarksLost > 0) {

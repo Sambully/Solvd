@@ -217,7 +217,7 @@ export default function GenerateExamCard() {
                   <span className="text-amber-500">⚡</span> Instant Mock Generator
                 </span>
                 <span className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-indigo-700">
-                  Gemini 2.5 CBT Engine
+                  Solvd CBT Engine
                 </span>
               </div>
               <p className="mt-1 text-xs text-slate-500 max-w-2xl">

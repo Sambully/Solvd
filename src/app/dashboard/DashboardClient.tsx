@@ -138,7 +138,7 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
 
           <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/80 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Gemini 2.5 Flash CBT Engine · Operational</span>
+            <span>Solvd CBT Engine · Operational</span>
           </div>
         </div>
 

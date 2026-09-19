@@ -43,7 +43,7 @@ export default function AnalyticsClient({ data }: Props) {
               No Test Data Yet
             </h3>
             <p className="mt-1 max-w-sm text-xs text-zinc-500 dark:text-zinc-400">
-              Generate and submit your first NEET CBT mock exam to unlock detailed accuracy graphs, speed metrics, and AI recommendations.
+              Generate and submit your first NEET CBT mock exam to unlock detailed accuracy graphs, speed metrics, and strategic performance recommendations.
             </p>
           </div>
           <Link
@@ -168,7 +168,7 @@ export default function AnalyticsClient({ data }: Props) {
         <DifficultyMasteryCards breakdown={data.difficultyBreakdown} />
       </div>
 
-      {/* Row 4: Speed & Tactical AI Advice */}
+      {/* Row 4: Speed & Tactical Performance Advice */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div>
           <PacingGaugeCard avgTimeSeconds={data.avgTimePerQuestionSeconds} />

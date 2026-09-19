@@ -156,7 +156,7 @@ function buildReminderHtml({
           <tr>
             <td style="padding: 20px 32px; background-color: #09090b; border-top: 1px solid #27272a; text-align: center;">
               <p style="margin: 0 0 4px 0; font-size: 11px; color: #71717a;">
-                Solvd NEET CBT • Smart AI Practice for Future Doctors
+                Solvd NEET CBT • High-Yield Assessment Platform for Future Doctors
               </p>
               <p style="margin: 0; font-size: 10px; color: #52525b;">
                 You received this email because you are a member of "${roomName}".

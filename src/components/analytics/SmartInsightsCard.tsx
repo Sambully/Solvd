@@ -20,7 +20,7 @@ export default function SmartInsightsCard({
           </div>
           <div>
             <h3 className="text-base font-bold text-black dark:text-zinc-50">
-              AI Tactical Insights & Strategy
+              Tactical Performance Insights & Strategy
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Personalized exam recommendations to maximize your NEET percentile

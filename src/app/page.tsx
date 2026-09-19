@@ -27,7 +27,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#fafafa] text-zinc-900 font-sans antialiased selection:bg-amber-200 selection:text-black">
       {/* 1. Top Navigation Bar */}
-      <header className="sticky top-0 z-50 border-b border-black/[.06] bg-white/90 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-black/[.05] bg-white/60 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 shadow-2xs">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
           {/* Brand Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
@@ -49,21 +49,18 @@ export default function Home() {
 
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-zinc-600">
-            <a href="#features" className="transition-colors hover:text-black">
+            <Link href="/features" className="transition-colors hover:text-black">
               Features
-            </a>
-            <a href="#study-circles" className="transition-colors hover:text-black">
-              Study Circles
-            </a>
-            <a href="#cbt-simulator" className="transition-colors hover:text-black">
+            </Link>
+            <Link href="/cbt-simulator" className="transition-colors hover:text-black">
               CBT Simulator
-            </a>
-            <a href="#analytics" className="transition-colors hover:text-black">
-              Analytics
-            </a>
-            <a href="#pricing" className="transition-colors hover:text-black">
-              Pricing
-            </a>
+            </Link>
+            <Link href="/help" className="transition-colors hover:text-black">
+              Help
+            </Link>
+            <Link href="/pricing" className="transition-colors hover:text-black font-bold text-slate-900">
+              Pricing <span className="rounded-full bg-amber-300 px-1.5 py-0.2 text-[10px] font-black text-black ml-1">FREE</span>
+            </Link>
           </nav>
 
           {/* Auth CTA */}
@@ -625,11 +622,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 6. Section: Call to Action (Ready to test your true NEET rank?) */}
-      <section id="pricing" className="border-t border-black/[.06] bg-white py-20 text-center">
+      {/* 6. Section: Call to Action (Free Early Access) */}
+      <section className="border-t border-black/[.06] bg-white py-20 text-center">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-800 shadow-inner mb-6">
             <Target className="h-7 w-7" />
+          </div>
+
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-1.5 text-xs font-bold text-amber-900 shadow-2xs mb-4">
+            <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-pulse" />
+            <span>SPECIAL EARLY ACCESS PROMOTION</span>
           </div>
 
           <h2 className="text-3xl font-extrabold tracking-tight text-zinc-950 sm:text-4xl">
@@ -637,46 +639,36 @@ export default function Home() {
           </h2>
 
           <p className="mt-3 text-sm leading-relaxed text-zinc-600 sm:text-base">
-            Join over 12,000 medical candidates practicing in genuine NTA conditions
-            today. Get instant access with zero credit card needed.
+            Join over 12,000 medical candidates practicing in genuine NTA conditions.
+            Solvd is <strong>100% free till 30 October</strong> with zero credit card needed.
           </p>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (emailInput) {
-                window.location.href = `/sign-up?email=${encodeURIComponent(emailInput)}`;
-              } else {
-                window.location.href = "/sign-up";
-              }
-            }}
-            className="mx-auto mt-8 flex max-w-md flex-col gap-2 sm:flex-row"
-          >
-            <input
-              type="email"
-              placeholder="Enter your student email..."
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              className="flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-black placeholder:text-zinc-400 focus:border-black focus:outline-hidden focus:ring-1 focus:ring-black"
-            />
-            <button
-              type="submit"
-              className="flex items-center justify-center gap-1 rounded-xl bg-black px-6 py-3 text-sm font-bold text-white shadow-sm hover:bg-zinc-800 transition-transform active:scale-95"
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/dashboard"
+              className="flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-black px-8 text-sm font-bold text-white shadow-md hover:bg-zinc-800 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              <span>Get Started</span>
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </form>
+              <span>Use Solvd for free</span>
+              <ArrowRight className="h-4 w-4 text-amber-400" />
+            </Link>
+
+            <Link
+              href="/pricing"
+              className="flex h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-6 text-sm font-bold text-zinc-800 shadow-2xs hover:bg-zinc-50 transition-all"
+            >
+              <span>View Pricing Plan</span>
+            </Link>
+          </div>
 
           <div className="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-zinc-500">
             <span className="flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Free 7-Day Trial
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Free till 30 October
             </span>
             <span className="flex items-center gap-1">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Updated 2026 NTA Syllabi
             </span>
             <span className="flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Cancel anytime
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Zero card required
             </span>
           </div>
         </div>
@@ -693,10 +685,11 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-6 font-semibold">
-            <a href="#" className="hover:text-black">Privacy</a>
-            <a href="#" className="hover:text-black">Terms</a>
-            <a href="#" className="hover:text-black">NTA Syllabus</a>
-            <a href="#" className="hover:text-black">System Diagnostics</a>
+            <Link href="/" className="hover:text-black">Home</Link>
+            <Link href="/features" className="hover:text-black">Features</Link>
+            <Link href="/cbt-simulator" className="hover:text-black">CBT Simulator</Link>
+            <Link href="/help" className="hover:text-black">Help</Link>
+            <Link href="/pricing" className="hover:text-black">Pricing</Link>
           </div>
 
           <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-emerald-600">

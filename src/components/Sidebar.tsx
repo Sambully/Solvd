@@ -115,7 +115,7 @@ export default function Sidebar() {
           </div>
 
           <Link
-            href="/#pricing"
+            href="/pricing"
             className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#fbbf24] py-2 text-center text-xs font-black text-slate-950 shadow-sm transition-all hover:bg-[#f59e0b] active:scale-98"
           >
             <Zap className="h-3 w-3 fill-slate-950 text-slate-950" />

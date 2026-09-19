@@ -162,14 +162,18 @@ export async function getDashboardData(userId: string): Promise<DashboardFullDat
   });
 
   const avgScorePercent =
-    totalMaxScore > 0 ? Math.max(0, Math.min(100, Math.round((totalScore / totalMaxScore) * 100))) : 86;
+    totalMaxScore > 0 ? Math.max(0, Math.min(100, Math.round((totalScore / totalMaxScore) * 100))) : 0;
   const avgScore720 = Math.round((avgScorePercent / 100) * 720);
-  const overallAccuracy = avgScorePercent > 0 ? avgScorePercent : 89.4;
-  const negativeMarksTotal = totalNegatives > 0 ? totalNegatives : 18;
+  const overallAccuracy = totalMaxScore > 0 ? avgScorePercent : 0;
+  const negativeMarksTotal = totalNegatives;
 
   // Percentile estimate based on score
-  const percentileRank = Number((Math.min(99.9, Math.max(80, 80 + (avgScorePercent / 100) * 19.8))).toFixed(1));
-  const estAirRank = Math.max(120, Math.round((100 - percentileRank) * 450 + 350));
+  const percentileRank = totalExamsTaken > 0
+    ? Number((Math.min(99.9, Math.max(50, 60 + (avgScorePercent / 100) * 39.8))).toFixed(1))
+    : 0;
+  const estAirRank = totalExamsTaken > 0
+    ? Math.max(1, Math.round((100 - percentileRank) * 450 + 50))
+    : 0;
 
   // Find next upcoming scheduled room exam across joined rooms
   let upcomingCohort: UpcomingCohort | null = null;
@@ -206,10 +210,77 @@ export async function getDashboardData(userId: string): Promise<DashboardFullDat
     });
   }
 
-  // Subject-wise Precision Radar
-  const physicsAcc = Math.min(100, Math.max(65, Math.round(overallAccuracy * 0.94)));
-  const chemAcc = Math.min(100, Math.max(70, Math.round(overallAccuracy * 1.02)));
-  const bioAcc = Math.min(100, Math.max(75, Math.round(overallAccuracy * 1.05)));
+  // Calculate real subject-wise performance from user attempts
+  let phyScore = 0;
+  let phyMax = 0;
+
+  let chemScore = 0;
+  let chemMax = 0;
+
+  let bioScore = 0;
+  let bioMax = 0;
+
+  for (const att of submittedAttempts) {
+    const title = att.exam.title.toLowerCase();
+    const qCount = att.exam._count.questions || 15;
+    const maxScore = qCount * 4;
+    const score = Math.max(0, att.score ?? 0);
+
+    if (
+      title.includes("physics") ||
+      title.includes("mechanics") ||
+      title.includes("optics") ||
+      title.includes("electro") ||
+      title.includes("kinematics") ||
+      title.includes("thermodynamics") ||
+      title.includes("rotation")
+    ) {
+      phyScore += score;
+      phyMax += maxScore;
+    } else if (
+      title.includes("chem") ||
+      title.includes("organic") ||
+      title.includes("inorganic") ||
+      title.includes("bonding") ||
+      title.includes("equilibrium")
+    ) {
+      chemScore += score;
+      chemMax += maxScore;
+    } else if (
+      title.includes("bio") ||
+      title.includes("botany") ||
+      title.includes("zoology") ||
+      title.includes("genetics") ||
+      title.includes("ncert") ||
+      title.includes("cell") ||
+      title.includes("ecology") ||
+      title.includes("physiology")
+    ) {
+      bioScore += score;
+      bioMax += maxScore;
+    } else {
+      // Full mock / Mixed test: partition proportionally (25% Physics, 25% Chemistry, 50% Biology)
+      const pScorePart = Math.round(score * 0.25);
+      const pMaxPart = Math.round(maxScore * 0.25);
+      phyScore += pScorePart;
+      phyMax += pMaxPart;
+
+      const cScorePart = Math.round(score * 0.25);
+      const cMaxPart = Math.round(maxScore * 0.25);
+      chemScore += cScorePart;
+      chemMax += cMaxPart;
+
+      const bScorePart = score - pScorePart - cScorePart;
+      const bMaxPart = maxScore - pMaxPart - cMaxPart;
+      bioScore += bScorePart;
+      bioMax += bMaxPart;
+    }
+  }
+
+  // Calculate real percentages
+  const physicsAcc = phyMax > 0 ? Math.max(0, Math.min(100, Math.round((phyScore / phyMax) * 100))) : 0;
+  const chemAcc = chemMax > 0 ? Math.max(0, Math.min(100, Math.round((chemScore / chemMax) * 100))) : 0;
+  const bioAcc = bioMax > 0 ? Math.max(0, Math.min(100, Math.round((bioScore / bioMax) * 100))) : 0;
 
   const subjectRadar: SubjectRadar[] = [
     {

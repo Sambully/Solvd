@@ -149,7 +149,7 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
           <div className="mt-3">
             <div className="flex items-baseline justify-between">
               <p className="text-2xl sm:text-3xl font-black text-slate-950">
-                {data.totalExamsTaken > 0 ? data.totalExamsTaken : 4}{" "}
+                {data.totalExamsTaken}{" "}
                 <span className="text-xs font-normal text-slate-500">Mock Tests</span>
               </p>
               {/* Sparkline curve */}
@@ -158,7 +158,7 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
               </svg>
             </div>
             <p className="mt-1 text-[11px] font-bold text-emerald-600">
-              ↗ +2 mocks this week
+              {data.weeklyMocksCount > 0 ? `↗ +${data.weeklyMocksCount} mocks this week` : "Ready for your next test"}
             </p>
           </div>
         </div>
@@ -176,7 +176,7 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
           <div className="mt-3">
             <div className="flex items-baseline justify-between">
               <p className="text-2xl sm:text-3xl font-black text-slate-950">
-                {data.avgScore720 > 0 ? data.avgScore720 : 94}{" "}
+                {data.avgScore720}{" "}
                 <span className="text-xs font-normal text-slate-400">/ 720</span>
               </p>
               {/* Sparkline curve */}
@@ -185,7 +185,9 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
               </svg>
             </div>
             <p className="mt-1 text-[11px] font-bold text-slate-500">
-              Top 82.6% · Rank est. AIR 8180
+              {data.totalExamsTaken > 0
+                ? `Top ${data.percentileRank}% · Rank est. AIR ${data.estAirRank}`
+                : "No tests taken yet"}
             </p>
           </div>
         </div>
@@ -203,8 +205,7 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
           <div className="mt-3">
             <div className="flex items-baseline justify-between">
               <p className="text-2xl sm:text-3xl font-black text-slate-950">
-                {data.overallAccuracy > 0 ? data.overallAccuracy : 13}%{" "}
-                <span className="text-xs font-bold text-emerald-600">+1.2%</span>
+                {data.overallAccuracy}%
               </p>
               {/* Sparkline curve */}
               <svg className="w-16 h-6 text-emerald-500" viewBox="0 0 60 20" fill="none">
@@ -212,7 +213,7 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
               </svg>
             </div>
             <p className="mt-1 text-[11px] font-mono font-bold text-slate-500">
-              P: 84% · C: 91% · B: 94%
+              P: {data.subjectRadar[0]?.percentage ?? 0}% · C: {data.subjectRadar[1]?.percentage ?? 0}% · B: {data.subjectRadar[2]?.percentage ?? 0}%
             </p>
           </div>
         </div>
@@ -230,7 +231,7 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
           <div className="mt-3">
             <div className="flex items-baseline justify-between">
               <p className="text-2xl sm:text-3xl font-black text-rose-600">
-                -{data.negativeMarksTotal > 0 ? data.negativeMarksTotal : 13}{" "}
+                -{data.negativeMarksTotal}{" "}
                 <span className="text-xs font-normal text-slate-400">lost</span>
               </p>
               {/* Sparkline curve */}
@@ -238,8 +239,8 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
                 <path d="M0 4 Q 25 8, 45 14 T 60 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
             </div>
-            <p className="mt-1 text-[11px] font-bold text-emerald-600">
-              ↓ Down 40% vs last month
+            <p className="mt-1 text-[11px] font-bold text-slate-500">
+              {data.totalExamsTaken > 0 ? "Penalty marks across all attempts" : "0 penalties recorded"}
             </p>
           </div>
         </div>

@@ -29,11 +29,53 @@ interface DashboardClientProps {
   data: DashboardFullData;
 }
 
+function generateSparkline(values: number[], width = 60, height = 20): string {
+  if (!values || values.length === 0) {
+    return `M 0 ${height / 2} L ${width} ${height / 2}`;
+  }
+  if (values.length === 1) {
+    return `M 0 ${height / 2} L ${width} ${height / 2}`;
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min === 0 ? 1 : max - min;
+  const paddingY = 3;
+  const usableH = height - paddingY * 2;
+
+  const points = values.map((val, i) => {
+    const x = Math.round((i / (values.length - 1)) * width);
+    const y = Math.round(height - paddingY - ((val - min) / range) * usableH);
+    return { x, y };
+  });
+
+  let path = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const current = points[i];
+    const next = points[i + 1];
+    const cpX = (current.x + next.x) / 2;
+    path += ` C ${cpX} ${current.y}, ${cpX} ${next.y}, ${next.x} ${next.y}`;
+  }
+  return path;
+}
+
 export default function DashboardClient({ userName, data }: DashboardClientProps) {
   const router = useRouter();
   const [filterTab, setFilterTab] = useState<"ALL" | "PHYSICS" | "BOOKMARKED">("ALL");
   const [countdownText, setCountdownText] = useState<string>("14m 18s");
   const [launchingPreset, setLaunchingPreset] = useState<string | null>(null);
+
+  // Chronological attempt trends for dynamic live sparklines
+  const chronologicalAttempts = [...data.recentAttempts].reverse();
+  const testCountTrend = chronologicalAttempts.map((_, i) => i + 1);
+  const scoreTrend = chronologicalAttempts.map((a) => (a.maxScore > 0 ? Math.round((a.score / a.maxScore) * 100) : 0));
+  const accuracyTrend = chronologicalAttempts.map((a) => a.accuracy);
+  const negativeTrend = chronologicalAttempts.map((a) => a.negativeMarks);
+
+  const testsSparkline = generateSparkline(testCountTrend);
+  const scoreSparkline = generateSparkline(scoreTrend);
+  const accuracySparkline = generateSparkline(accuracyTrend);
+  const negativeSparkline = generateSparkline(negativeTrend);
 
   async function launchPresetExam(moduleId: string, count: number, presetName: string) {
     setLaunchingPreset(presetName);
@@ -152,9 +194,9 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
                 {data.totalExamsTaken}{" "}
                 <span className="text-xs font-normal text-slate-500">Mock Tests</span>
               </p>
-              {/* Sparkline curve */}
+              {/* Live dynamic sparkline curve */}
               <svg className="w-16 h-6 text-blue-500" viewBox="0 0 60 20" fill="none">
-                <path d="M0 16 Q 15 12, 30 14 T 60 4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                <path d={testsSparkline} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
             <p className="mt-1 text-[11px] font-bold text-emerald-600">
@@ -179,9 +221,9 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
                 {data.avgScore720}{" "}
                 <span className="text-xs font-normal text-slate-400">/ 720</span>
               </p>
-              {/* Sparkline curve */}
+              {/* Live dynamic sparkline curve */}
               <svg className="w-16 h-6 text-amber-500" viewBox="0 0 60 20" fill="none">
-                <path d="M0 18 Q 20 16, 40 8 T 60 4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                <path d={scoreSparkline} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
             <p className="mt-1 text-[11px] font-bold text-slate-500">
@@ -207,9 +249,9 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
               <p className="text-2xl sm:text-3xl font-black text-slate-950">
                 {data.overallAccuracy}%
               </p>
-              {/* Sparkline curve */}
+              {/* Live dynamic sparkline curve */}
               <svg className="w-16 h-6 text-emerald-500" viewBox="0 0 60 20" fill="none">
-                <path d="M0 16 Q 25 14, 40 8 T 60 4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                <path d={accuracySparkline} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
             <p className="mt-1 text-[11px] font-mono font-bold text-slate-500">
@@ -234,9 +276,9 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
                 -{data.negativeMarksTotal}{" "}
                 <span className="text-xs font-normal text-slate-400">lost</span>
               </p>
-              {/* Sparkline curve */}
+              {/* Live dynamic sparkline curve */}
               <svg className="w-16 h-6 text-rose-500" viewBox="0 0 60 20" fill="none">
-                <path d="M0 4 Q 25 8, 45 14 T 60 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                <path d={negativeSparkline} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
             <p className="mt-1 text-[11px] font-bold text-slate-500">

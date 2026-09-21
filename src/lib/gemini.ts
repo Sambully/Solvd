@@ -4,10 +4,11 @@ import {
   FileState,
 } from "@google/genai";
 import {
-  generatedExamSchema,
   type GeneratedExam,
+  generatedExamSchema,
   type ExamCustomizationOptions,
-} from "@/lib/examTypes";
+} from "./examTypes";
+import { cleanScientificText, cleanQuestionObject } from "./formatMath";
 
 export interface InputFile {
   buffer: Buffer;
@@ -56,7 +57,6 @@ EXAM RULES:
 - Every question must be a single-correct-answer MCQ with EXACTLY 4 options (A, B, C, D), matching authentic NEET exam standards.
 - Base every question strictly on the subject matter present in the source. Do NOT invent unrelated topics.
 - If the source has questions/answers or notes, create original NEET-calibrated questions that test understanding of those key concepts, reactions, definitions, formulae, and mechanisms.
-- Format equations and formulas cleanly (e.g. "Delta H = q_p", "H2SO4", "E = mc^2", "PV = nRT").
 - correctOptionIndex is the 0-based index (0, 1, 2, or 3) corresponding to the correct answer in the options array.
 - Ensure all 4 options are plausible, non-trivial, and clear.
 - Keep explanations CONCISE (1-2 sentences: core concept + formula/calculation + answer) to ensure fast and reliable generation.
@@ -65,10 +65,21 @@ EXAM RULES:
   * For all standard numerical or conceptual MCQs, set "diagramSvg": null.
 - Provide a descriptive and specific title based on the chapter or topic (e.g. "Electrostatics & Capacitance — NEET Mock").
 
-CRITICAL JSON FORMATTING & ESCAPING:
+CRITICAL MATHEMATICAL & SCIENTIFIC FORMULA FORMATTING RULES:
+- NEVER write raw LaTeX commands or tags (DO NOT output \\frac, \\dfrac, \\text, \\sqrt, \\times, \\cdot, $, $$, or /$fraction/).
+- Always format mathematical equations, scientific formulas, and options in clean, standard, human-readable plain text using standard Unicode characters:
+  * Fractions: Write as "1/2", "(C1 * C2) / (C1 + C2)", "a / b", "3/4" (NEVER \\frac or /$fraction/)
+  * Exponents / Powers: Write with "^" (e.g. "10^-2 J", "x^2", "10^5 N/m^2", "cm^3", "m/s^2")
+  * Subscripts: Write cleanly like "C1", "C2", "V1", "V2", "H2SO4", "CO2", "KMnO4", "ΔU"
+  * Roots: Write as "√(x)" or "sqrt(x)" (NEVER \\sqrt)
+  * Multiplication: Write as "×" or "*" (e.g. "2.5 × 10^-2 J")
+  * Greek & Scientific Symbols: Use standard Unicode (e.g. Δ, μ, α, β, γ, θ, λ, π, Ω, ε0, σ, ρ, η, ν, ±, ≈, ≠, ≤, ≥, →, ⇌)
+  * Units: Write standard units (e.g. "μF", "μC", "J", "N", "V", "m/s", "mol/L", "kg")
+- All question text, options, and explanations MUST be immediately readable plain text with zero LaTeX markup.
+
+CRITICAL JSON FORMATTING:
 - Return ONLY a valid JSON object matching the exact structure below.
 - Do NOT include markdown code fences or conversational text outside the JSON.
-- If using any backslashes (e.g. in formulas), they MUST be double-escaped (\\\\) to ensure the JSON parses without syntax errors.
 
 {
   "title": string,
@@ -260,15 +271,17 @@ function normalizeExamData(raw: unknown): GeneratedExam {
         else if (trimmed === "D" || trimmed === "(4)" || trimmed === "4") correctIdx = 3;
       }
 
-      return {
+      return cleanQuestionObject({
         questionText: q.questionText || q.question || q.question_text || q.text || "Question",
         options: Array.isArray(options) ? options : ["A", "B", "C", "D"],
         correctOptionIndex: correctIdx ?? 0,
         explanation: q.explanation || q.solution || "",
         diagramSvg: q.diagramSvg || q.diagram_svg || null,
         difficulty: q.difficulty || "MEDIUM",
-      };
+      });
     });
+
+    data.title = cleanScientificText(data.title || "NEET Mock Exam");
   }
 
   return generatedExamSchema.parse(data);

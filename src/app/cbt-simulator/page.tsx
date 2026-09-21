@@ -111,7 +111,7 @@ export default function CBTSimulatorPage() {
             </h1>
 
             <p className="mt-5 text-base leading-relaxed text-zinc-600 sm:text-lg">
-              Experience the complete pipeline: messy handwritten notes scanned, parsed for LaTeX formulas and circuit diagrams, and launched into an authentic 1:1 NTA exam room environment.
+              Experience the complete pipeline: messy handwritten notes scanned, parsed for formulas and circuit diagrams, and launched into an authentic 1:1 NTA exam room environment.
             </p>
           </div>
 
@@ -187,9 +187,9 @@ export default function CBTSimulatorPage() {
                       <span>PARSING SCIENTIFIC FORMULAS & DIAGRAMS</span>
                     </div>
                     <div className="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-2">
-                      <p className="text-indigo-300 font-bold text-[11px]">LaTeX Formula Synthesized:</p>
+                      <p className="text-indigo-300 font-bold text-[11px]">Scientific Formula Extracted:</p>
                       <code className="text-xs text-amber-200 block bg-slate-950 p-2 rounded">
-                        \Delta U = \frac&#123;1&#125;&#123;2&#125; \frac&#123;C_1 C_2&#125;&#123;C_1 + C_2&#125; (V_1 - V_2)^2
+                        ΔU = 1/2 × [(C1 × C2) / (C1 + C2)] × (V1 - V2)²
                       </code>
                       <p className="text-slate-400 text-[10px]">Recognized Diagram: Parallel Capacitor Charge Redistribution Circuit</p>
                     </div>

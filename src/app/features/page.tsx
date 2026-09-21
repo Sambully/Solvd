@@ -164,7 +164,7 @@ export default function FeaturesPage() {
                         "Multi-file PDF, PNG, and JPG uploads up to 25MB",
                         "Automatic extraction of Ray Optics & Organic chemistry diagrams",
                         "Configurable question counts (10, 15, 20, 30, or 45 MCQs)",
-                        "LaTeX mathematical expressions with fractional stems and roots",
+                        "Clear mathematical expressions with fractional stems and roots",
                       ].map((item, idx) => (
                         <div key={idx} className="flex items-center gap-2.5 text-xs font-semibold text-slate-700">
                           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />

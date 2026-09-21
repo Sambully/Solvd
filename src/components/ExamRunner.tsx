@@ -19,6 +19,7 @@ import NTAHeader from "@/components/exam/NTAHeader";
 import NTAPalette from "@/components/exam/NTAPalette";
 import NTAQuestionPane from "@/components/exam/NTAQuestionPane";
 import NTASubmitModal from "@/components/exam/NTASubmitModal";
+import { cleanScientificText } from "@/lib/formatMath";
 
 export type RunnerQuestion = {
   id: string;
@@ -493,7 +494,7 @@ export default function ExamRunner({
             </div>
 
             <h2 className="mt-4 text-lg font-semibold leading-relaxed text-black dark:text-zinc-50">
-              {q.questionText}
+              {cleanScientificText(q.questionText)}
             </h2>
 
             {/* Options */}
@@ -520,7 +521,7 @@ export default function ExamRunner({
                       {String.fromCharCode(65 + i)}
                     </span>
                     <span className="text-base font-normal text-black dark:text-zinc-100">
-                      {opt}
+                      {cleanScientificText(opt)}
                     </span>
                   </button>
                 );

@@ -5,6 +5,7 @@ import { getOrCreateUser } from "@/lib/getOrCreateUser";
 import { prisma } from "@/lib/prisma";
 import type { AnswerMap } from "@/lib/examTypes";
 import DiagramViewer from "@/components/DiagramViewer";
+import { cleanScientificText } from "@/lib/formatMath";
 
 export default async function AttemptResultPage({
   params,
@@ -197,7 +198,7 @@ export default async function AttemptResultPage({
                     {qi + 1}
                   </span>
                   <p className="text-base font-medium text-black dark:text-zinc-50">
-                    {question.questionText}
+                    {cleanScientificText(question.questionText)}
                   </p>
                 </div>
                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>
@@ -237,7 +238,7 @@ export default async function AttemptResultPage({
                       >
                         {String.fromCharCode(65 + i)}
                       </span>
-                      <span className="flex-1">{opt}</span>
+                      <span className="flex-1">{cleanScientificText(opt)}</span>
                       {isChosenCorrect && (
                         <span className="rounded-md bg-emerald-200/60 px-2 py-0.5 text-xs font-bold text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
                           Your Answer (Correct)
@@ -275,7 +276,7 @@ export default async function AttemptResultPage({
 
                   {question.explanation && (
                     <p className="mt-2 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-                      {question.explanation}
+                      {cleanScientificText(question.explanation)}
                     </p>
                   )}
                 </div>

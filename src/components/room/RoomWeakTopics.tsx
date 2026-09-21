@@ -3,6 +3,7 @@
 import { AlertTriangle, Lightbulb } from "lucide-react";
 import type { WeakTopicQuestion } from "@/lib/roomActions";
 import DiagramViewer from "@/components/DiagramViewer";
+import { cleanScientificText } from "@/lib/formatMath";
 
 interface RoomWeakTopicsProps {
   weakTopics: WeakTopicQuestion[];
@@ -53,7 +54,7 @@ export default function RoomWeakTopics({ weakTopics }: RoomWeakTopicsProps) {
                   {idx + 1}
                 </span>
                 <p className="text-sm font-semibold text-black dark:text-zinc-100">
-                  {q.questionText}
+                  {cleanScientificText(q.questionText)}
                 </p>
               </div>
 
@@ -84,7 +85,7 @@ export default function RoomWeakTopics({ weakTopics }: RoomWeakTopicsProps) {
                   Key Concept Solution
                 </p>
                 <p className="mt-1 text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
-                  {q.explanation}
+                  {cleanScientificText(q.explanation)}
                 </p>
               </div>
             )}

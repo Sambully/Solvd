@@ -78,7 +78,7 @@ const FEATURE_GUIDES: FeatureGuide[] = [
         stepNumber: 3,
         title: "Instant Synthesis with NTA Marking",
         description:
-          "Click 'Generate NEET Exam'. In under 20 seconds, the engine extracts key concepts, formulates single-choice MCQs with plausible distractors, formats LaTeX mathematical formulas, and launches your timed exam.",
+          "Click 'Generate NEET Exam'. In under 20 seconds, the engine extracts key concepts, formulates single-choice MCQs with plausible distractors, formats clean scientific formulas and equations, and launches your timed exam.",
         icon: Sparkles,
         tip: "Every generated question includes full step-by-step verified explanations in the review phase.",
       },

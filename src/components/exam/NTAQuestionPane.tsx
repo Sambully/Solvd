@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, CheckCircle, RotateCcw, BookmarkPlus } from "lucide-react";
 import type { RunnerQuestion } from "@/components/ExamRunner";
+import { cleanScientificText } from "@/lib/formatMath";
 
 interface Props {
   question: RunnerQuestion;
@@ -69,7 +70,7 @@ export default function NTAQuestionPane({
       {/* Main Question Body */}
       <div className="flex-1 p-5 sm:p-6 overflow-y-auto">
         <h2 className={`font-medium text-zinc-900 dark:text-zinc-100 ${fontSizeClass}`}>
-          {question.questionText}
+          {cleanScientificText(question.questionText)}
         </h2>
 
         {/* Options List */}
@@ -101,7 +102,7 @@ export default function NTAQuestionPane({
                     ({idx + 1})
                   </span>
                   <span className={`text-sm text-zinc-800 dark:text-zinc-200 ${fontSizeClass}`}>
-                    {opt}
+                    {cleanScientificText(opt)}
                   </span>
                 </div>
               </div>

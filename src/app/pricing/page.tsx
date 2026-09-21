@@ -164,7 +164,7 @@ export default function PricingPage() {
                     "Synchronized Study Circles & Live Lobbies",
                     "Automated 15-Min Gmail Test Reminders",
                     "Negative Marking Mistake Ledger & AIR",
-                    "Step-by-step LaTeX Numerical Explanations",
+                    "Step-by-step Scientific Explanations",
                     "Zero Credit Card or Payment Method Needed",
                   ].map((feat, idx) => (
                     <div key={idx} className="flex items-center gap-2.5 text-xs font-semibold text-slate-700">

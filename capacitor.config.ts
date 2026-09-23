@@ -19,6 +19,14 @@ const config: CapacitorConfig = {
     cleartext: true,
     androidScheme: "https",
     url: "http://10.22.205.185:3000",
+    allowNavigation: [
+      "10.22.205.185*",
+      "localhost*",
+      "*.clerk.accounts.dev",
+      "*.clerk.com",
+      "*.google.com",
+      "*.accounts.google.com",
+    ],
   },
   android: {
     allowMixedContent: true,

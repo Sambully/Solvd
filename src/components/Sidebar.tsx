@@ -17,6 +17,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import SolvdLogo from "@/components/SolvdLogo";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -57,7 +58,7 @@ export default function Sidebar() {
   const PremiumVipCard = () => (
     <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-[#0f172a] p-3 text-white shadow-md">
       {/* Subtle Glow Accent */}
-      <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-400/10 blur-xl" />
+      <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-emerald-400/10 blur-xl" />
 
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1 rounded bg-amber-400/15 border border-amber-400/30 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300">
@@ -95,7 +96,7 @@ export default function Sidebar() {
         onClick={() => setIsOpen(false)}
         className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/10 py-1.5 text-center text-[10.5px] font-bold text-slate-200 backdrop-blur-xs transition-all hover:bg-white/15 hover:text-white active:scale-98"
       >
-        <ShieldCheck className="h-3.5 w-3.5 text-amber-400" />
+        <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
         <span>View All Plan Perks</span>
       </Link>
     </div>
@@ -128,35 +129,17 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* 1. Mobile Top Header Bar (md:hidden) */}
+      {/* 1. Mobile Top Header Bar (md:hidden) - NO LOGO in normal top bar per user instruction */}
       <header className="sticky top-0 z-40 flex md:hidden items-center justify-between border-b border-slate-200/90 bg-white/95 px-3.5 py-2.5 backdrop-blur-md shadow-2xs">
-        <div className="flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => setIsOpen(true)}
-            aria-label="Open Navigation Menu"
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 shadow-2xs hover:bg-slate-100 active:scale-95 transition-all"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-
-          <Link href="/dashboard" className="flex items-center gap-2 group">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0f172a] text-white shadow-2xs">
-              <div className="relative flex h-3.5 w-3.5 items-center justify-center">
-                <div className="h-3 w-3 rounded-full border-2 border-amber-400 border-t-transparent" />
-                <div className="absolute h-1 w-1 rounded-full bg-emerald-400" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-base font-black tracking-tight text-slate-900">
-                solvd<span className="text-amber-500">.</span>
-              </span>
-              <span className="rounded bg-slate-100 px-1 py-0.2 text-[9px] font-extrabold uppercase text-slate-600">
-                NEET CBT
-              </span>
-            </div>
-          </Link>
-        </div>
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          aria-label="Open Navigation Menu"
+          className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-800 shadow-2xs hover:bg-slate-100 active:scale-95 transition-all"
+        >
+          <Menu className="h-4 w-4 text-slate-700" />
+          <span className="text-xs font-black uppercase tracking-wider text-slate-800">Menu</span>
+        </button>
 
         <div className="flex items-center gap-2">
           <span className="inline-flex rounded-md bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[9px] font-black text-emerald-700">
@@ -174,34 +157,21 @@ export default function Sidebar() {
         />
       )}
 
-      {/* 3. Mobile Slide-Over Overlay Drawer (md:hidden) */}
+      {/* 3. Mobile Slide-Over Overlay Drawer (md:hidden) - Logo ONLY here */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex h-full w-72 max-w-[85vw] flex-col justify-between border-r border-slate-200 bg-white p-4 shadow-2xl transition-transform duration-300 ease-in-out md:hidden ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex flex-col">
-          {/* Drawer Header */}
+          {/* Drawer Header with Logo linking to /dashboard */}
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <Link
-              href="/"
+              href="/dashboard"
               onClick={() => setIsOpen(false)}
               className="flex items-center gap-2 group"
             >
-              <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#0f172a] text-white shadow-xs">
-                <div className="relative flex h-3.5 w-3.5 items-center justify-center">
-                  <div className="h-3 w-3 rounded-full border-2 border-amber-400 border-t-transparent" />
-                  <div className="absolute h-1 w-1 rounded-full bg-emerald-400" />
-                </div>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-base font-black tracking-tight text-slate-900">
-                  solvd<span className="text-amber-500">.</span>
-                </span>
-                <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-slate-600">
-                  NEET CBT
-                </span>
-              </div>
+              <SolvdLogo size="sm" />
             </Link>
 
             <button
@@ -236,7 +206,7 @@ export default function Sidebar() {
                 >
                   <Icon
                     className={`h-4 w-4 ${
-                      isActive ? "text-indigo-400" : "text-slate-500"
+                      isActive ? "text-emerald-400" : "text-slate-500"
                     }`}
                   />
                   <span>{item.label}</span>
@@ -253,26 +223,13 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* 4. Desktop Persistent Sidebar (hidden on mobile, flex on md+) */}
+      {/* 4. Desktop Persistent Sidebar (hidden on mobile, flex on md+) - Logo links to /dashboard */}
       <aside className="sticky top-0 hidden md:flex h-screen w-64 flex-col justify-between border-r border-slate-200/90 bg-white p-4 shrink-0 z-30 font-sans shadow-xs">
-        {/* Brand Logo */}
+        {/* Brand Logo Header linking to /dashboard */}
         <div>
           <div className="flex items-center gap-2.5 px-2 py-3 border-b border-slate-100">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#0f172a] text-white shadow-xs transition-transform group-hover:scale-105">
-                <div className="relative flex h-4 w-4 items-center justify-center">
-                  <div className="h-3.5 w-3.5 rounded-full border-2 border-amber-400 border-t-transparent" />
-                  <div className="absolute h-1 w-1 rounded-full bg-emerald-400" />
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg font-black tracking-tight text-slate-900">
-                  solvd<span className="text-amber-500">.</span>
-                </span>
-                <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
-                  NEET CBT
-                </span>
-              </div>
+            <Link href="/dashboard" className="flex items-center gap-2.5 group">
+              <SolvdLogo size="md" />
             </Link>
           </div>
 
@@ -297,7 +254,7 @@ export default function Sidebar() {
                 >
                   <Icon
                     className={`h-4 w-4 ${
-                      isActive ? "text-indigo-400" : "text-slate-500"
+                      isActive ? "text-emerald-400" : "text-slate-500"
                     }`}
                   />
                   <span>{item.label}</span>

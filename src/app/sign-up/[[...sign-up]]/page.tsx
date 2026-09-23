@@ -2,6 +2,7 @@ import { SignUp } from "@clerk/nextjs";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, ShieldCheck, Sparkles, Users, FileText } from "lucide-react";
 import { clerkCustomTheme } from "@/lib/clerkTheme";
+import SolvdLogo from "@/components/SolvdLogo";
 
 export default function SignUpPage() {
   return (
@@ -9,21 +10,8 @@ export default function SignUpPage() {
       {/* 1. Header Navigation */}
       <header className="sticky top-0 z-50 border-b border-black/[.05] bg-white/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black text-white shadow-xs transition-transform group-hover:scale-105">
-              <div className="relative flex h-5 w-5 items-center justify-center">
-                <div className="h-4 w-4 rounded-full border-2 border-amber-400 border-t-transparent" />
-                <div className="absolute h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xl font-black tracking-tight text-black">
-                solvd<span className="text-amber-500">.</span>
-              </span>
-              <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-zinc-600">
-                NEET CBT
-              </span>
-            </div>
+          <Link href="/" className="flex items-center gap-2 group">
+            <SolvdLogo size="sm" />
           </Link>
 
           <Link
@@ -112,7 +100,7 @@ export default function SignUpPage() {
       <footer className="border-t border-black/[.06] bg-white py-6 text-xs text-zinc-500">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 sm:flex-row sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 font-bold text-black">
-            <span className="text-sm font-black">solvd.</span>
+            <SolvdLogo size="sm" showBadge={false} />
             <span className="font-normal text-zinc-400">
               © 2026 Solvd Edtech Labs. All rights reserved.
             </span>

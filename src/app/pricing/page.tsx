@@ -16,6 +16,7 @@ import {
   Clock,
   Award,
 } from "lucide-react";
+import SolvdLogo from "@/components/SolvdLogo";
 
 export default function PricingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -46,20 +47,7 @@ export default function PricingPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-3.5 py-2.5 sm:px-6 sm:py-3.5 lg:px-8">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-black text-white shadow-xs transition-transform group-hover:scale-105">
-              <div className="relative flex h-3.5 w-3.5 sm:h-5 sm:w-5 items-center justify-center">
-                <div className="h-3 w-3 sm:h-4 sm:w-4 rounded-full border-2 border-amber-400 border-t-transparent" />
-                <div className="absolute h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-emerald-400" />
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-base sm:text-xl font-black tracking-tight text-black">
-                solvd<span className="text-amber-500">.</span>
-              </span>
-              <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider text-zinc-600">
-                NEET CBT
-              </span>
-            </div>
+            <SolvdLogo size="sm" />
           </Link>
 
           {/* Nav Links */}
@@ -305,7 +293,7 @@ export default function PricingPage() {
       <footer className="border-t border-black/[.06] bg-white py-8 text-xs text-zinc-500">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6 lg:px-8">
           <div className="flex items-center gap-2 font-bold text-black">
-            <span className="text-base font-black">solvd.</span>
+            <SolvdLogo size="sm" showBadge={false} />
             <span className="font-normal text-zinc-400">
               © 2026 Solvd Edtech Labs. All rights reserved.
             </span>

@@ -17,8 +17,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Solvd",
+  title: "Solvd · Authentic NTA NEET CBT Platform",
   description: "Computer-based NEET assessment platform and mock exams for medical aspirants",
+  icons: {
+    icon: "/app-icon-square.png",
+    shortcut: "/app-icon-square.png",
+    apple: "/app-icon-square.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

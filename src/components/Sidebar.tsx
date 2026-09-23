@@ -129,17 +129,24 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* 1. Mobile Top Header Bar (md:hidden) - NO LOGO in normal top bar per user instruction */}
-      <header className="sticky top-0 z-40 flex md:hidden items-center justify-between border-b border-slate-200/90 bg-white/95 px-3.5 py-2.5 backdrop-blur-md shadow-2xs">
+      {/* 1. Mobile Top Header Bar (md:hidden) - Centered Solvd text only */}
+      <header className="sticky top-0 z-40 relative flex md:hidden items-center justify-between border-b border-slate-200/90 bg-white/95 px-3.5 py-2.5 backdrop-blur-md shadow-2xs">
         <button
           type="button"
           onClick={() => setIsOpen(true)}
           aria-label="Open Navigation Menu"
-          className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-800 shadow-2xs hover:bg-slate-100 active:scale-95 transition-all"
+          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-slate-800 shadow-2xs hover:bg-slate-100 active:scale-95 transition-all"
         >
           <Menu className="h-4 w-4 text-slate-700" />
           <span className="text-xs font-black uppercase tracking-wider text-slate-800">Menu</span>
         </button>
+
+        {/* Centered Solvd Text Only */}
+        <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none">
+          <span className="text-base font-black tracking-tight text-slate-900">
+            Solvd<span className="text-emerald-500">.</span>
+          </span>
+        </div>
 
         <div className="flex items-center gap-2">
           <span className="inline-flex rounded-md bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[9px] font-black text-emerald-700">

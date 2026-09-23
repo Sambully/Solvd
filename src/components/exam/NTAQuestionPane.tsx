@@ -112,65 +112,65 @@ export default function NTAQuestionPane({
       </div>
 
       {/* Bottom Official NTA Action Buttons Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 border-t border-zinc-200 bg-zinc-50/90 p-2.5 sm:p-3.5 dark:border-zinc-800 dark:bg-zinc-950">
         {/* Left Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
           <button
             onClick={onSaveAndNext}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-md bg-[#22c55e] hover:bg-[#16a34a] px-4 py-2 text-xs font-bold text-white shadow-xs transition-colors"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 rounded-lg bg-[#16a34a] hover:bg-[#15803d] px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-bold text-white shadow-2xs transition-colors whitespace-nowrap active:scale-98"
           >
-            <CheckCircle className="h-3.5 w-3.5" />
-            Save & Next
+            <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+            <span>Save & Next</span>
           </button>
 
           <button
             onClick={onClearResponse}
             disabled={selectedOption === undefined}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-md border border-zinc-300 bg-white hover:bg-zinc-100 px-3.5 py-2 text-xs font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 rounded-lg border border-zinc-300 bg-white hover:bg-zinc-100 px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-semibold text-zinc-700 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 transition-colors whitespace-nowrap active:scale-98"
           >
-            <RotateCcw className="h-3.5 w-3.5 text-zinc-400" />
-            Clear Response
+            <RotateCcw className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+            <span>Clear</span>
           </button>
 
           <button
             onClick={onSaveAndMarkReview}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-md bg-[#8b5cf6] hover:bg-[#7c3aed] px-3.5 py-2 text-xs font-bold text-white shadow-xs transition-colors"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 rounded-lg bg-[#7c3aed] hover:bg-[#6d28d9] px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-bold text-white shadow-2xs transition-colors whitespace-nowrap active:scale-98"
           >
-            <BookmarkPlus className="h-3.5 w-3.5" />
-            Save & Mark for Review
+            <BookmarkPlus className="h-3.5 w-3.5 shrink-0" />
+            <span>Save & Review</span>
           </button>
 
           <button
             onClick={onMarkReviewAndNext}
-            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-md bg-[#f59e0b] hover:bg-[#d97706] px-3.5 py-2 text-xs font-bold text-white shadow-xs transition-colors"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1 rounded-lg bg-[#d97706] hover:bg-[#b45309] px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-bold text-white shadow-2xs transition-colors whitespace-nowrap active:scale-98"
           >
-            Mark for Review & Next
+            <span>Mark Review & Next</span>
           </button>
         </div>
 
         {/* Right Navigation & Final Submit Buttons */}
-        <div className="flex items-center justify-end gap-2 border-t sm:border-t-0 pt-2 sm:pt-0 border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center justify-end gap-1.5 sm:gap-2 border-t sm:border-t-0 pt-2 sm:pt-0 border-zinc-200 dark:border-zinc-800">
           <button
             onClick={onPrevious}
             disabled={questionIndex === 0}
-            className="flex items-center gap-1 rounded-md border border-zinc-300 bg-white hover:bg-zinc-100 px-3 py-2 text-xs font-semibold text-zinc-700 disabled:opacity-30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+            className="inline-flex items-center gap-1 rounded-lg border border-zinc-300 bg-white hover:bg-zinc-100 px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-semibold text-zinc-700 disabled:opacity-30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 active:scale-98"
           >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
+            <ChevronLeft className="h-3.5 w-3.5" />
+            <span>Prev</span>
           </button>
 
           <button
             onClick={onNext}
             disabled={questionIndex === totalQuestions - 1}
-            className="flex items-center gap-1 rounded-md border border-zinc-300 bg-white hover:bg-zinc-100 px-3 py-2 text-xs font-semibold text-zinc-700 disabled:opacity-30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+            className="inline-flex items-center gap-1 rounded-lg border border-zinc-300 bg-white hover:bg-zinc-100 px-2.5 py-1.5 sm:px-3 sm:py-2 text-[11px] sm:text-xs font-semibold text-zinc-700 disabled:opacity-30 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 active:scale-98"
           >
-            Next
-            <ChevronRight className="h-4 w-4" />
+            <span>Next</span>
+            <ChevronRight className="h-3.5 w-3.5" />
           </button>
 
           <button
             onClick={onSubmitExam}
-            className="rounded-md bg-[#0284c7] hover:bg-[#0369a1] px-5 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-colors"
+            className="rounded-lg bg-[#0284c7] hover:bg-[#0369a1] px-3.5 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider text-white shadow-sm transition-colors active:scale-98"
           >
             Submit
           </button>

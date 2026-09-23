@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import { ClerkProvider } from "@clerk/nextjs";
 import CapacitorInit from "@/components/CapacitorInit";
+import NavigationProgressBar from "@/components/NavigationProgressBar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,6 +29,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       >
         <body className="min-h-full flex flex-col">
+          <Suspense fallback={null}>
+            <NavigationProgressBar />
+          </Suspense>
           <CapacitorInit />
           {children}
         </body>

@@ -1,33 +1,49 @@
+import { cache } from "react";
 import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
-export async function getOrCreateUser() {
+export const getOrCreateUser = cache(async () => {
   const clerkUser = await currentUser();
   if (!clerkUser) return null;
 
   const email = clerkUser.emailAddresses[0]?.emailAddress ?? "";
   const name = clerkUser.fullName ?? clerkUser.firstName ?? "Student";
 
-  let lastError: unknown = null;
+  try {
+    // 1. Ultra-fast indexed read path (avoids write lock delays on Supabase pooler)
+    const existing = await prisma.user.findUnique({
+      where: { clerkId: clerkUser.id },
+    });
 
-  // Retry up to 3 times with backoff to handle transient Supabase pooler drops / cold starts
-  for (let attempt = 1; attempt <= 3; attempt++) {
+    if (existing) {
+      // If user details changed, update without blocking
+      if (existing.email !== email || existing.name !== name) {
+        prisma.user
+          .update({
+            where: { id: existing.id },
+            data: { email, name },
+          })
+          .catch(() => {});
+      }
+      return existing;
+    }
+
+    // 2. Only create if user is newly signing up
+    const newUser = await prisma.user.create({
+      data: { clerkId: clerkUser.id, email, name },
+    });
+    return newUser;
+  } catch {
+    // Fallback upsert for resilience
     try {
-      const user = await prisma.user.upsert({
+      return await prisma.user.upsert({
         where: { clerkId: clerkUser.id },
         update: { email, name },
         create: { clerkId: clerkUser.id, email, name },
       });
-      return user;
     } catch (err) {
-      lastError = err;
-      if (attempt < 3) {
-        // Wait 500ms on first retry, 1000ms on second retry
-        await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
-      }
+      console.error("Failed to authenticate/fetch user:", err);
+      return null;
     }
   }
-
-  console.error("Failed to fetch/create user after 3 database attempts:", lastError);
-  throw lastError;
-}
+});

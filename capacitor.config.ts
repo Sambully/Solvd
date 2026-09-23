@@ -15,12 +15,10 @@ const config: CapacitorConfig = {
   appName: "Solvd NEET CBT",
   webDir: "public",
   server: {
-    // Cleartext permits HTTP for local dev server testing on Wi-Fi/Emulator
+    // Cleartext permits HTTP for local dev server testing on Wi-Fi/Hotspot
     cleartext: true,
     androidScheme: "https",
-    // When testing live-reload with local dev server or production URL, uncomment and set the URL:
-    // url: "http://10.0.2.2:3000", // Android Emulator alias to localhost
-    // url: "https://your-production-domain.com",
+    url: "http://10.22.205.185:3000",
   },
   android: {
     allowMixedContent: true,

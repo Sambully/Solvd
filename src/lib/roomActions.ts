@@ -134,6 +134,96 @@ export async function createStudyRoom(
 }
 
 /**
+ * Deletes a persistent study room (Host only).
+ */
+export async function deleteStudyRoom(
+  roomId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getOrCreateUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    const room = await prisma.testRoom.findUnique({
+      where: { id: roomId },
+      select: { id: true, hostUserId: true, roomCode: true },
+    });
+
+    if (!room) return { success: false, error: "Room not found." };
+    if (room.hostUserId !== user.id) {
+      return { success: false, error: "Only the room host can delete this study circle." };
+    }
+
+    // Delete attempts associated with this room
+    await prisma.attempt.deleteMany({
+      where: { roomId: room.id },
+    });
+
+    // Delete room exams
+    await prisma.roomExam.deleteMany({
+      where: { roomId: room.id },
+    });
+
+    // Delete participants
+    await prisma.roomParticipant.deleteMany({
+      where: { roomId: room.id },
+    });
+
+    // Delete the room
+    await prisma.testRoom.delete({
+      where: { id: room.id },
+    });
+
+    revalidatePath("/dashboard/room");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (err) {
+    console.error("Failed to delete study room:", err);
+    return { success: false, error: "Failed to delete study room." };
+  }
+}
+
+/**
+ * Leaves a persistent study room (Non-host participant).
+ */
+export async function leaveStudyRoom(
+  roomId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getOrCreateUser();
+    if (!user) return { success: false, error: "Unauthorized" };
+
+    const room = await prisma.testRoom.findUnique({
+      where: { id: roomId },
+      select: { id: true, hostUserId: true, roomCode: true },
+    });
+
+    if (!room) return { success: false, error: "Room not found." };
+
+    if (room.hostUserId === user.id) {
+      return {
+        success: false,
+        error: "As the host, you cannot leave the room. You can delete the room instead.",
+      };
+    }
+
+    await prisma.roomParticipant.deleteMany({
+      where: {
+        roomId: room.id,
+        userId: user.id,
+      },
+    });
+
+    revalidatePath("/dashboard/room");
+    revalidatePath(`/dashboard/room/${room.roomCode}`);
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (err) {
+    console.error("Failed to leave study room:", err);
+    return { success: false, error: "Failed to leave study room." };
+  }
+}
+
+/**
  * Ensures a user is registered as a participant in a room without triggering revalidatePath (safe for server component rendering).
  */
 export async function ensureRoomParticipant(

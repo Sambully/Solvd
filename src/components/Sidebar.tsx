@@ -12,6 +12,8 @@ import {
   Zap,
   BookOpen,
   MoreHorizontal,
+  Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -87,39 +89,48 @@ export default function Sidebar() {
 
       {/* 3. Bottom Pinned Upgrade Card & Profile Row */}
       <div className="flex flex-col gap-3 pt-3 border-t border-slate-100">
-        {/* Pro Aspirant Dark Card */}
-        <div className="rounded-2xl border border-slate-800 bg-[#0f172a] p-4 text-white shadow-md">
+        {/* Premium Account / Free Currently Themed Card */}
+        <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-[#0f172a] p-3.5 text-white shadow-md">
+          {/* Subtle Glow Accent */}
+          <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-amber-400/10 blur-xl" />
+
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1 rounded bg-amber-400/15 border border-amber-400/30 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300">
-              ⚡ PRO ASPIRANT
+              <Sparkles className="h-2.5 w-2.5 fill-amber-300 text-amber-300" />
+              PREMIUM VIP
             </span>
-            <span className="text-[10px] font-medium text-slate-400">
-              AIIMS Track
+            <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-extrabold text-emerald-400">
+              FREE CURRENTLY
             </span>
           </div>
 
-          <p className="mt-2 text-[11px] leading-relaxed text-slate-300">
-            Unlimited OCR handwritten mocks & collaborative AIIMS study circles.
-          </p>
+          <div className="mt-2.5">
+            <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
+              <span>All Pro Features Unlocked</span>
+            </h4>
+            <p className="mt-1 text-[10.5px] leading-relaxed text-slate-300">
+              Unlimited NTA CBT drills, OCR note extraction & live Study Circles.
+            </p>
+          </div>
 
-          <div className="mt-3">
-            <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
-              <span>Mock Quota</span>
-              <span className="font-mono font-bold text-amber-300">
-                18 / Unlimited
+          <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-900/90 border border-slate-800 px-2.5 py-1.5">
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] font-semibold text-slate-400">
+                Current Plan
               </span>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
-              <div className="h-full w-3/4 rounded-full bg-amber-400" />
-            </div>
+            <span className="text-[10px] font-extrabold text-amber-300 font-mono">
+              100% Free Access
+            </span>
           </div>
 
           <Link
             href="/pricing"
-            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#fbbf24] py-2 text-center text-xs font-black text-slate-950 shadow-sm transition-all hover:bg-[#f59e0b] active:scale-98"
+            className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/10 py-1.5 text-center text-[11px] font-bold text-slate-200 backdrop-blur-xs transition-all hover:bg-white/15 hover:text-white active:scale-98"
           >
-            <Zap className="h-3 w-3 fill-slate-950 text-slate-950" />
-            <span>Upgrade Plan</span>
+            <ShieldCheck className="h-3.5 w-3.5 text-amber-400" />
+            <span>View All Plan Perks</span>
           </Link>
         </div>
 

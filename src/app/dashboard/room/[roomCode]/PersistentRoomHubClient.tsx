@@ -18,8 +18,17 @@ import {
   FileCheck2,
   Lock,
   CalendarClock,
+  Trash2,
+  LogOut,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
-import type { RoomDetailsResponse, RoomTestItem } from "@/lib/roomActions";
+import {
+  type RoomDetailsResponse,
+  type RoomTestItem,
+  deleteStudyRoom,
+  leaveStudyRoom,
+} from "@/lib/roomActions";
 import RoomMultiTestTrendChart from "@/components/room/RoomMultiTestTrendChart";
 import CreateRoomTestModal from "@/components/room/CreateRoomTestModal";
 import UpcomingTestAlertBanner from "@/components/room/UpcomingTestAlertBanner";
@@ -168,6 +177,13 @@ export default function PersistentRoomHubClient({
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // Delete & Leave Room State
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
   useEffect(() => {
     setRoom(initialData);
   }, [initialData]);
@@ -196,6 +212,42 @@ export default function PersistentRoomHubClient({
     window.open(url, "_blank");
   }
 
+  async function handleDeleteRoom() {
+    setIsDeleting(true);
+    setActionError(null);
+    try {
+      const res = await deleteStudyRoom(room.id);
+      if (res.success) {
+        router.push("/dashboard/room");
+        router.refresh();
+      } else {
+        setActionError(res.error || "Failed to delete room.");
+        setIsDeleting(false);
+      }
+    } catch {
+      setActionError("An unexpected error occurred while deleting the room.");
+      setIsDeleting(false);
+    }
+  }
+
+  async function handleLeaveRoom() {
+    setIsLeaving(true);
+    setActionError(null);
+    try {
+      const res = await leaveStudyRoom(room.id);
+      if (res.success) {
+        router.push("/dashboard/room");
+        router.refresh();
+      } else {
+        setActionError(res.error || "Failed to leave room.");
+        setIsLeaving(false);
+      }
+    } catch {
+      setActionError("An unexpected error occurred while leaving the room.");
+      setIsLeaving(false);
+    }
+  }
+
   return (
     <>
       {/* Room Header Hero */}
@@ -214,19 +266,41 @@ export default function PersistentRoomHubClient({
             </p>
           </div>
 
-          {/* Host Action Buttons */}
-          {room.isHost && (
-            <div className="flex items-center gap-2">
+          {/* Action Buttons: Host vs Member */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {room.isHost ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateTestOpen(true)}
+                  className="flex items-center gap-2 rounded-xl bg-black px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                >
+                  <Plus className="h-4 w-4" />
+                  Schedule Mock Test
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteModalOpen(true)}
+                  className="flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50/80 px-3.5 py-2.5 text-xs font-bold text-rose-700 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300 transition-colors"
+                  title="Delete this study room"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Delete Room</span>
+                </button>
+              </>
+            ) : (
               <button
                 type="button"
-                onClick={() => setIsCreateTestOpen(true)}
-                className="flex items-center gap-2 rounded-xl bg-black px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                onClick={() => setIsLeaveModalOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-xs font-bold text-zinc-700 hover:bg-zinc-100 hover:text-rose-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
+                title="Leave this study circle"
               >
-                <Plus className="h-4 w-4" />
-                Schedule Mock Test
+                <LogOut className="h-3.5 w-3.5" />
+                <span>Leave Room</span>
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Shareable Code Strip */}
@@ -412,6 +486,122 @@ export default function PersistentRoomHubClient({
           router.refresh();
         }}
       />
+
+      {/* Delete Room Confirmation Modal (Host Only) */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 dark:bg-rose-950/50">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-950 dark:text-zinc-50">
+                  Delete Study Circle?
+                </h3>
+                <p className="text-xs text-slate-500">This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <p className="mt-4 text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+              Are you sure you want to permanently delete <strong>{room.name}</strong> ({room.roomCode})? All scheduled mock tests, member roster, and leaderboard records will be removed.
+            </p>
+
+            {actionError && (
+              <div className="mt-3 rounded-lg bg-rose-50 p-2.5 text-xs text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
+                {actionError}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-2.5">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => {
+                  setIsDeleteModalOpen(false);
+                  setActionError(null);
+                }}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleDeleteRoom}
+                className="flex items-center gap-1.5 rounded-xl bg-rose-600 px-5 py-2 text-xs font-bold text-white hover:bg-rose-700 transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <span>Yes, Delete Room</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leave Room Confirmation Modal (Members) */}
+      {isLeaveModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800">
+            <div className="flex items-center gap-3 text-amber-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/50">
+                <LogOut className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-950 dark:text-zinc-50">
+                  Leave Study Circle?
+                </h3>
+                <p className="text-xs text-slate-500">You can always re-join with the room code.</p>
+              </div>
+            </div>
+
+            <p className="mt-4 text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+              Are you sure you want to leave <strong>{room.name}</strong>? You will no longer receive 15-minute test notifications for this room unless you re-enter using the invite code <strong>{room.roomCode}</strong>.
+            </p>
+
+            {actionError && (
+              <div className="mt-3 rounded-lg bg-rose-50 p-2.5 text-xs text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
+                {actionError}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-2.5">
+              <button
+                type="button"
+                disabled={isLeaving}
+                onClick={() => {
+                  setIsLeaveModalOpen(false);
+                  setActionError(null);
+                }}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isLeaving}
+                onClick={handleLeaveRoom}
+                className="flex items-center gap-1.5 rounded-xl bg-slate-950 px-5 py-2 text-xs font-bold text-white hover:bg-slate-800 transition-colors disabled:opacity-50"
+              >
+                {isLeaving ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <span>Leaving...</span>
+                  </>
+                ) : (
+                  <span>Leave Circle</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

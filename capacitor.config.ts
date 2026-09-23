@@ -15,13 +15,12 @@ const config: CapacitorConfig = {
   appName: "Solvd NEET CBT",
   webDir: "public",
   server: {
-    // Cleartext permits HTTP for local dev server testing on Wi-Fi/Hotspot
     cleartext: true,
     androidScheme: "https",
-    url: "http://10.22.205.185:3000",
+    url: "https://solvd-ten.vercel.app",
     allowNavigation: [
-      "10.22.205.185*",
-      "localhost*",
+      "solvd-ten.vercel.app",
+      "*.vercel.app",
       "*.clerk.accounts.dev",
       "*.clerk.com",
       "*.google.com",

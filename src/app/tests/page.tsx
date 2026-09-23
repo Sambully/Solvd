@@ -10,7 +10,7 @@ export default async function TestsPage() {
   const exams = await getAllExams(user.id);
 
   return (
-    <main className="p-6 sm:p-8">
+    <main className="p-3.5 sm:p-8">
       <TestsListClient initialExams={exams} />
     </main>
   );

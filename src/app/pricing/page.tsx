@@ -42,28 +42,28 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-[#fafafa] text-zinc-900 font-sans antialiased selection:bg-amber-200 selection:text-black flex flex-col justify-between">
       {/* 1. Top Navbar */}
-      <header className="sticky top-0 z-50 border-b border-black/[.05] bg-white/60 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 shadow-2xs">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-50 border-b border-black/[.05] bg-white/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 shadow-2xs">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-3.5 py-2.5 sm:px-6 sm:py-3.5 lg:px-8">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black text-white shadow-xs transition-transform group-hover:scale-105">
-              <div className="relative flex h-5 w-5 items-center justify-center">
-                <div className="h-4 w-4 rounded-full border-2 border-amber-400 border-t-transparent" />
-                <div className="absolute h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="flex h-7 w-7 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-black text-white shadow-xs transition-transform group-hover:scale-105">
+              <div className="relative flex h-3.5 w-3.5 sm:h-5 sm:w-5 items-center justify-center">
+                <div className="h-3 w-3 sm:h-4 sm:w-4 rounded-full border-2 border-amber-400 border-t-transparent" />
+                <div className="absolute h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-emerald-400" />
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xl font-black tracking-tight text-black">
+            <div className="flex items-center gap-1">
+              <span className="text-base sm:text-xl font-black tracking-tight text-black">
                 solvd<span className="text-amber-500">.</span>
               </span>
-              <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-zinc-600">
+              <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-[9px] sm:text-[11px] font-extrabold uppercase tracking-wider text-zinc-600">
                 NEET CBT
               </span>
             </div>
           </Link>
 
           {/* Nav Links */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-zinc-600">
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-sm font-semibold text-zinc-600">
             <Link href="/features" className="transition-colors hover:text-black">
               Features
             </Link>
@@ -79,13 +79,13 @@ export default function PricingPage() {
           </nav>
 
           {/* Right Action */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/dashboard"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-black px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-zinc-800 hover:scale-[1.02] active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-black px-3.5 py-1.5 sm:px-5 sm:py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-zinc-800 active:scale-98"
             >
-              <span>Use Solvd for free</span>
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-zinc-800 text-[10px]">
+              <span>Use Free</span>
+              <div className="hidden sm:flex h-4 w-4 items-center justify-center rounded-full bg-zinc-800 text-[9px]">
                 →
               </div>
             </Link>

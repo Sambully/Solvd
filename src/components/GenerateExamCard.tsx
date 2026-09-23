@@ -171,27 +171,27 @@ export default function GenerateExamCard() {
   const isGenerating = status === "generating";
 
   return (
-    <div className="flex flex-col rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-xs text-slate-900">
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-7 shadow-sm text-slate-900">
       <input
         ref={inputRef}
         type="file"
         multiple
-        accept="application/pdf,image/png,image/jpeg,image/jpg,image/webp"
-        className="hidden"
+        accept=".pdf,image/png,image/jpeg,image/jpg,image/webp"
         onChange={onInputChange}
+        className="hidden"
       />
 
-      {isGenerating ? (
-        <div className="flex flex-col items-center justify-center gap-5 py-12 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 shadow-inner">
-            <Loader2 className="h-7 w-7 animate-spin text-slate-900" />
+      {status === "generating" ? (
+        <div className="flex flex-col items-center justify-center gap-4 py-8 sm:py-12 text-center">
+          <div className="relative flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-[#0f172a] text-white shadow-md">
+            <Loader2 className="h-7 w-7 sm:h-8 sm:w-8 animate-spin text-amber-400" />
           </div>
 
           <div className="max-w-md">
-            <h3 className="text-xl font-bold tracking-tight text-slate-950">
-              Generating your NEET CBT
+            <h3 className="text-base sm:text-lg font-black tracking-tight text-slate-950">
+              Generating Authentic CBT Mock
             </h3>
-            <p className="mt-1.5 min-h-6 text-sm text-slate-500 transition-all">
+            <p className="mt-1 text-xs sm:text-sm text-slate-600 font-medium animate-pulse">
               {LOADING_MESSAGES[msgIndex]}
             </p>
           </div>
@@ -208,25 +208,25 @@ export default function GenerateExamCard() {
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4 sm:gap-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 border-b border-slate-100 pb-3 sm:pb-4">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-base font-extrabold tracking-tight text-slate-950 flex items-center gap-1.5">
+                <span className="text-sm sm:text-base font-extrabold tracking-tight text-slate-950 flex items-center gap-1.5">
                   <span className="text-amber-500">⚡</span> Instant Mock Generator
                 </span>
-                <span className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-indigo-700">
+                <span className="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-indigo-700">
                   Solvd CBT Engine
                 </span>
               </div>
-              <p className="mt-1 text-xs text-slate-500 max-w-2xl">
-                Drag & drop handwritten notes or NCERT chapters. Solvd synthesizes high-yield questions with NTA penalty weighting in seconds.
+              <p className="mt-1 text-[11px] sm:text-xs text-slate-500 max-w-2xl">
+                Upload handwritten notes or NCERT chapters. Solvd synthesizes high-yield questions with NTA penalty weighting in seconds.
               </p>
             </div>
             <button
               onClick={() => setShowOptions(!showOptions)}
-              className={`flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all self-start sm:self-auto ${
+              className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-bold transition-all self-start sm:self-auto ${
                 showOptions
                   ? "border-slate-900 bg-slate-900 text-white"
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
@@ -237,34 +237,34 @@ export default function GenerateExamCard() {
             </button>
           </div>
 
-          {/* Drag and Drop Zone matching image 2 */}
+          {/* Drag and Drop Zone */}
           <div
             onDragOver={onDragOver}
             onDragLeave={onDragLeave}
             onDrop={onDrop}
             onClick={() => inputRef.current?.click()}
-            className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-8 text-center transition-all ${
+            className={`flex cursor-pointer flex-col items-center justify-center gap-2.5 sm:gap-3 rounded-2xl border-2 border-dashed p-5 sm:p-8 text-center transition-all ${
               isDragging
                 ? "border-indigo-500 bg-indigo-50/50"
                 : "border-slate-200/90 bg-slate-50/40 hover:border-slate-300 hover:bg-slate-50/80"
             }`}
           >
             {/* OCR Badge on Cloud Icon */}
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo-100 bg-white shadow-xs">
-              <UploadCloud className="h-6 w-6 text-indigo-600" />
-              <span className="absolute -top-1.5 -right-1.5 rounded bg-indigo-600 px-1 py-0.2 text-[9px] font-black uppercase text-white shadow-2xs">
+            <div className="relative flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl border border-indigo-100 bg-white shadow-xs">
+              <UploadCloud className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />
+              <span className="absolute -top-1.5 -right-1.5 rounded bg-indigo-600 px-1 py-0.2 text-[8px] sm:text-[9px] font-black uppercase text-white shadow-2xs">
                 OCR
               </span>
             </div>
 
             <div>
-              <p className="text-sm font-bold text-slate-900">
+              <p className="text-xs sm:text-sm font-bold text-slate-900">
                 Click to upload or drag & drop handwritten notes
               </p>
-              <p className="mt-0.5 text-xs text-slate-400">
-                Supported files: PDF, JPG, PNG (Max 25MB)
+              <p className="mt-0.5 text-[11px] sm:text-xs text-slate-400">
+                Supported: PDF, JPG, PNG (Max 25MB)
               </p>
-              <div className="mt-2.5 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-900">
+              <div className="mt-2 inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[11px] sm:text-xs font-semibold text-amber-900">
                 <span className="text-amber-500">⚡</span>
                 <span>Generates {questionCount}-question custom NTA module</span>
               </div>
@@ -416,8 +416,8 @@ export default function GenerateExamCard() {
           )}
 
           {/* Action Button */}
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-xs text-slate-400 font-medium">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
+            <span className="text-[11px] sm:text-xs text-slate-400 font-medium">
               {files.length > 0
                 ? `${files.length} file(s) · ${questionCount} Questions (${questionCount * 4} Marks)`
                 : "No files chosen yet"}
@@ -426,7 +426,7 @@ export default function GenerateExamCard() {
             <button
               onClick={handleGenerate}
               disabled={files.length === 0}
-              className="flex items-center gap-2 rounded-xl bg-[#0f172a] px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed active:scale-98"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-[#0f172a] px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed active:scale-98"
             >
               <Sparkles className="h-3.5 w-3.5 text-amber-400" />
               Generate NEET Exam

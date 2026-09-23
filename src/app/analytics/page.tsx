@@ -10,7 +10,7 @@ export default async function AnalyticsPage() {
   const data = await getAnalyticsData(user.id);
 
   return (
-    <main className="p-6 sm:p-8 max-w-7xl mx-auto">
+    <main className="p-3.5 sm:p-8 max-w-7xl mx-auto">
       <AnalyticsClient data={data} />
     </main>
   );

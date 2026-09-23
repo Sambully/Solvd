@@ -16,7 +16,7 @@ export default async function QuestionBankPage() {
   const modules = await getQuestionBankModules();
 
   return (
-    <main className="p-4 sm:p-7 max-w-6xl mx-auto w-full font-sans text-slate-900">
+    <main className="p-3.5 sm:p-7 max-w-6xl mx-auto w-full font-sans text-slate-900">
       <QuestionBankClient initialModules={modules} />
     </main>
   );

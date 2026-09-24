@@ -23,8 +23,14 @@ export default function CapacitorInit() {
 
         // 2. Deep Link & OAuth Callback Handler
         const { App } = await import("@capacitor/app");
-        const urlListener = await App.addListener("appUrlOpen", (data) => {
+        const { Browser } = await import("@capacitor/browser");
+        const urlListener = await App.addListener("appUrlOpen", async (data) => {
           try {
+            // Close any active Chrome Custom Tab overlay immediately upon receiving callback
+            try {
+              await Browser.close();
+            } catch {}
+
             const parsed = new URL(data.url);
             let path = parsed.pathname;
             if (parsed.search) path += parsed.search;

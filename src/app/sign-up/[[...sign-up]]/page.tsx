@@ -88,6 +88,7 @@ export default function SignUpPage() {
             <div className="w-full max-w-md">
               <SignUp
                 appearance={clerkCustomTheme}
+                forceRedirectUrl="/dashboard"
                 fallbackRedirectUrl="/dashboard"
                 signInUrl="/sign-in"
               />

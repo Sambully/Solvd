@@ -24,19 +24,6 @@ public class MainActivity extends BridgeActivity {
                 settings.setJavaScriptEnabled(true);
                 settings.setDomStorageEnabled(true);
                 settings.setDatabaseEnabled(true);
-                settings.setSupportMultipleWindows(false);
-                settings.setJavaScriptCanOpenWindowsAutomatically(true);
-
-                // Strip standard WebView signature ('; wv' and 'Version/X.X') so Google OAuth
-                // and Clerk recognize the WebView as a standard Chrome Mobile browser instead
-                // of blocking with disallowed_useragent or forcing an external Chrome redirect.
-                String defaultUserAgent = settings.getUserAgentString();
-                if (defaultUserAgent != null) {
-                    String customUserAgent = defaultUserAgent
-                        .replaceAll(";\\s*wv", "")
-                        .replaceAll("Version\\/[0-9.]+\\s*", "");
-                    settings.setUserAgentString(customUserAgent);
-                }
             }
         } catch (Exception e) {
             e.printStackTrace();

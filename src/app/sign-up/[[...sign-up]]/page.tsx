@@ -1,7 +1,6 @@
-import { SignUp } from "@clerk/nextjs";
+import CustomSignUpForm from "@/components/auth/CustomSignUpForm";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, ShieldCheck, Sparkles, Users, FileText } from "lucide-react";
-import { clerkCustomTheme } from "@/lib/clerkTheme";
 import SolvdLogo from "@/components/SolvdLogo";
 
 export default function SignUpPage() {
@@ -83,16 +82,9 @@ export default function SignUpPage() {
             </div>
           </div>
 
-          {/* Right Column: Custom-Themed Clerk Sign Up Component */}
+          {/* Right Column: Custom-Engineered Instant Auth Form */}
           <div className="lg:col-span-6 flex flex-col items-center justify-center w-full">
-            <div className="w-full max-w-md">
-              <SignUp
-                appearance={clerkCustomTheme}
-                forceRedirectUrl="/dashboard"
-                fallbackRedirectUrl="/dashboard"
-                signInUrl="/sign-in"
-              />
-            </div>
+            <CustomSignUpForm />
           </div>
         </div>
       </main>

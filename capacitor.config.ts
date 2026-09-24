@@ -25,6 +25,9 @@ const config: CapacitorConfig = {
       "*.clerk.com",
       "*.accounts.dev",
       "pleasant-dog-63.clerk.accounts.dev",
+      "img.clerk.com",
+      "*.cloudflare.com",
+      "challenges.cloudflare.com",
       "accounts.google.com",
       "*.accounts.google.com",
       "*.google.com",
@@ -39,8 +42,6 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: true,
     backgroundColor: "#0f172a",
-    overrideUserAgent:
-      "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36",
   },
   plugins: {
     SplashScreen: {

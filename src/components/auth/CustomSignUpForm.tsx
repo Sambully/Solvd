@@ -96,14 +96,56 @@ export default function CustomSignUpForm() {
     setError("");
 
     try {
+      const { Capacitor } = await import("@capacitor/core");
+
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const { GoogleSignIn } = await import("@capawesome/capacitor-google-sign-in");
+          const result = await GoogleSignIn.signIn();
+
+          if (result && result.email) {
+            const res = await fetch("/api/auth/google-native", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: result.email,
+                firstName: result.givenName || result.displayName || undefined,
+                lastName: result.familyName || undefined,
+                photoUrl: result.imageUrl || undefined,
+                idToken: result.idToken,
+              }),
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.token) {
+              throw new Error(data.error || "Failed to authenticate with Google");
+            }
+
+            const signInRes = await clerk.client.signIn.create({
+              strategy: "ticket",
+              ticket: data.token,
+            });
+
+            if (signInRes.status === "complete" && signInRes.createdSessionId) {
+              await clerk.setActive({ session: signInRes.createdSessionId });
+              router.push("/dashboard");
+              return;
+            }
+          }
+        } catch (nativeErr: unknown) {
+          console.warn("Native Google Sign-Up fallback:", nativeErr);
+        }
+      }
+
+      // Standard Web OAuth Redirect fallback
       await clerk.client.signUp.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: "/sso-callback",
         redirectUrlComplete: "/dashboard",
       });
     } catch (err: unknown) {
-      const clerkErr = err as { errors?: Array<{ message?: string }> };
-      setError(clerkErr?.errors?.[0]?.message || "Failed to connect with Google");
+      const clerkErr = err as { errors?: Array<{ message?: string }>; message?: string };
+      setError(clerkErr?.errors?.[0]?.message || clerkErr?.message || "Failed to connect with Google");
       setGoogleLoading(false);
     }
   };
@@ -148,7 +190,7 @@ export default function CustomSignUpForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#0f172a] hover:bg-slate-800 text-white font-black py-3.5 text-xs shadow-lg shadow-black/10 transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#0f172a] hover:bg-slate-800 text-white font-black py-3.5 text-xs shadow-lg shadow-black/10 transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50 cursor-pointer"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin text-white" />
@@ -197,7 +239,7 @@ export default function CustomSignUpForm() {
         type="button"
         onClick={handleGoogleSignUp}
         disabled={googleLoading || loading}
-        className="w-full flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 py-3 px-4 text-xs font-bold text-slate-800 shadow-2xs transition-all hover:border-slate-300 active:scale-[0.98] disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 py-3 px-4 text-xs font-bold text-slate-800 shadow-2xs transition-all hover:border-slate-300 active:scale-[0.98] disabled:opacity-50 cursor-pointer"
       >
         {googleLoading ? (
           <Loader2 className="h-4 w-4 animate-spin text-slate-600" />
@@ -293,7 +335,7 @@ export default function CustomSignUpForm() {
         <button
           type="submit"
           disabled={loading || googleLoading}
-          className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#0f172a] hover:bg-slate-800 text-white font-black py-3.5 text-xs shadow-lg shadow-black/10 transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50 mt-2"
+          className="w-full flex items-center justify-center gap-2 rounded-2xl bg-[#0f172a] hover:bg-slate-800 text-white font-black py-3.5 text-xs shadow-lg shadow-black/10 transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50 mt-2 cursor-pointer"
         >
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin text-white" />

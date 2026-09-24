@@ -9,6 +9,7 @@ export default function CapacitorInit() {
 
   useEffect(() => {
     let unlistenBackButton: (() => void) | undefined;
+    let unlistenUrlOpen: (() => void) | undefined;
 
     async function initNativePlugins() {
       try {
@@ -20,8 +21,28 @@ export default function CapacitorInit() {
         await StatusBar.setStyle({ style: Style.Dark });
         await StatusBar.setBackgroundColor({ color: "#0f172a" });
 
-        // 2. Hardware Back Button Listener
+        // 2. Deep Link & OAuth Callback Handler
         const { App } = await import("@capacitor/app");
+        const urlListener = await App.addListener("appUrlOpen", (data) => {
+          try {
+            const parsed = new URL(data.url);
+            let path = parsed.pathname;
+            if (parsed.search) path += parsed.search;
+            if (parsed.hash) path += parsed.hash;
+
+            if (path && path !== "/") {
+              router.push(path);
+            }
+          } catch (e) {
+            console.warn("Could not parse deep link URL:", e);
+          }
+        });
+
+        unlistenUrlOpen = () => {
+          urlListener.remove();
+        };
+
+        // 3. Hardware Back Button Listener
         const backListener = await App.addListener("backButton", ({ canGoBack }) => {
           // Check if user is inside an active timed test
           const isTakingTest =
@@ -55,6 +76,7 @@ export default function CapacitorInit() {
 
     return () => {
       if (unlistenBackButton) unlistenBackButton();
+      if (unlistenUrlOpen) unlistenUrlOpen();
     };
   }, [pathname, router]);
 

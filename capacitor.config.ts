@@ -23,13 +23,24 @@ const config: CapacitorConfig = {
       "*.vercel.app",
       "*.clerk.accounts.dev",
       "*.clerk.com",
-      "*.google.com",
+      "*.accounts.dev",
+      "pleasant-dog-63.clerk.accounts.dev",
+      "accounts.google.com",
       "*.accounts.google.com",
+      "*.google.com",
+      "*.google.co.in",
+      "*.googleapis.com",
+      "*.gstatic.com",
+      "ssl.gstatic.com",
+      "apis.google.com",
+      "content.googleapis.com",
     ],
   },
   android: {
     allowMixedContent: true,
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0f172a",
+    overrideUserAgent:
+      "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Mobile Safari/537.36",
   },
   plugins: {
     SplashScreen: {

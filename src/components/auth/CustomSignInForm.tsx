@@ -15,7 +15,28 @@ export default function CustomSignInForm() {
   const [error, setError] = useState("");
   // TEMP DEBUG: shows whether native + client ID are wired up. Remove later.
   const [debugInfo, setDebugInfo] = useState("AUTHDBG loading…");
+  const [logLines, setLogLines] = useState<string[]>([]);
+  const addLog = (s: string) =>
+    setLogLines((p) => [...p, `${new Date().toLocaleTimeString()} ${s}`]);
   const router = useRouter();
+
+  // Guaranteed browser-based Google sign-in (skips native entirely).
+  const handleWebSignIn = async () => {
+    if (!clerk.loaded || !clerk.client) return;
+    setGoogleLoading(true);
+    setError("");
+    try {
+      await clerk.client.signIn.authenticateWithRedirect({
+        strategy: "oauth_google",
+        redirectUrl: "/sso-callback",
+        redirectUrlComplete: "/dashboard",
+      });
+    } catch (err: unknown) {
+      const e = err as { errors?: Array<{ message?: string }>; message?: string };
+      setError(e?.errors?.[0]?.message || e?.message || "Could not connect to Google");
+      setGoogleLoading(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -78,6 +99,8 @@ export default function CustomSignInForm() {
     if (!clerk.loaded || !clerk.client) return;
     setGoogleLoading(true);
     setError("");
+    setLogLines([]);
+    addLog("tapped");
 
     try {
       const {
@@ -85,13 +108,15 @@ export default function CustomSignInForm() {
         nativeGoogleSignIn,
         NativeAuthCanceledError,
       } = await import("@/lib/nativeGoogleAuth");
+      addLog("lib-loaded");
+      const native = await isNativePlatform();
+      addLog("native=" + native);
 
       // NATIVE PATH: OS account chooser, no browser hand-off.
-      if (await isNativePlatform()) {
+      if (native) {
         try {
-          const result = await nativeGoogleSignIn((s) =>
-            setDebugInfo(`AUTHDBG v2 · stage=${s}`)
-          );
+          const result = await nativeGoogleSignIn((s) => addLog("stage:" + s));
+          addLog("got-token");
 
           const res = await fetch("/api/auth/google-native", {
             method: "POST",
@@ -126,6 +151,7 @@ export default function CustomSignInForm() {
           const code = (nativeErr as { code?: string })?.code ?? "";
           const msg = (nativeErr as { message?: string })?.message ?? String(nativeErr);
           console.error("Native Google Sign-In failed:", nativeErr);
+          addLog(`ERR [${name}${code ? "/" + code : ""}]: ${msg}`);
           setError(`NATIVE FAIL [${name}${code ? "/" + code : ""}]: ${msg}`);
           setGoogleLoading(false);
           return;
@@ -161,7 +187,24 @@ export default function CustomSignInForm() {
       {/* TEMP DEBUG badge — remove once native sign-in works */}
       <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-2 text-[10px] font-mono leading-snug text-amber-900 break-all">
         {debugInfo}
+        {logLines.length > 0 && (
+          <div className="mt-1 border-t border-amber-200 pt-1">
+            {logLines.map((l, i) => (
+              <div key={i}>{l}</div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* TEMP: guaranteed browser sign-in while native is being fixed */}
+      <button
+        type="button"
+        onClick={handleWebSignIn}
+        disabled={googleLoading || loading}
+        className="mb-3 w-full rounded-xl border border-sky-300 bg-sky-50 py-2.5 text-xs font-bold text-sky-800 disabled:opacity-50"
+      >
+        Use browser sign-in instead
+      </button>
 
       {error && (
         <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50/80 p-3 text-xs text-rose-800 animate-in fade-in duration-200">

@@ -46,6 +46,15 @@ jobs:
             mkdir -p "$HOME/.android"
             echo "$DEBUG_KEYSTORE_BASE64" | base64 -d > "$HOME/.android/debug.keystore"
             echo "Restored stable debug keystore (fixed SHA-1)."
+            echo "=================================================================="
+            echo " THIS is the SHA-1 your APK is signed with."
+            echo " It MUST match the SHA-1 in your Google Cloud Android OAuth client."
+            echo "=================================================================="
+            keytool -list -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -alias androiddebugkey \
+              -storepass android -keypass android | grep -E "SHA1:|SHA256:"
+            echo "=================================================================="
           else
             echo "WARNING: DEBUG_KEYSTORE_BASE64 secret not set."
             echo "Using an ephemeral keystore - the SHA-1 will change every build"

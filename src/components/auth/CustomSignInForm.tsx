@@ -99,17 +99,14 @@ export default function CustomSignInForm() {
             setGoogleLoading(false);
             return;
           }
-          // Do NOT fall back to the web redirect on native — that is the
-          // broken "kicked out to Chrome" flow. Surface the error instead.
-          console.error("Native Google Sign-In failed:", nativeErr);
-          const msg = (nativeErr as { message?: string })?.message;
-          setError(msg || "Google sign-in failed. Please try again.");
-          setGoogleLoading(false);
-          return;
+          // Native failed or timed out (e.g. Google Cloud config not matching
+          // yet). Fall through to the web redirect so the user can still sign
+          // in instead of being stuck on an endless spinner.
+          console.error("Native Google Sign-In failed, falling back to web:", nativeErr);
         }
       }
 
-      // WEB PATH: standard OAuth redirect (browser only).
+      // WEB PATH: standard OAuth redirect (browser, or native fallback).
       await clerk.client.signIn.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: "/sso-callback",

@@ -55,16 +55,35 @@ export class NativeAuthConfigError extends Error {}
 /** Thrown when the user dismisses the native account chooser. */
 export class NativeAuthCanceledError extends Error {}
 
+/** Thrown when the native chooser never responds (e.g. misconfigured SHA-1). */
+export class NativeAuthTimeoutError extends Error {}
+
+// If the native Credential Manager is misconfigured it can hang forever
+// instead of rejecting. Bail out after this long so callers can fall back.
+const NATIVE_SIGN_IN_TIMEOUT_MS = 15000;
+
 /**
  * Launches the native Google account chooser and returns the verified
- * ID token plus profile fields. Throws NativeAuthCanceledError if the
- * user backs out, NativeAuthConfigError if the client ID is missing.
+ * ID token plus profile fields.
+ *
+ * Throws:
+ *  - NativeAuthCanceledError if the user backs out
+ *  - NativeAuthConfigError if the client ID is missing
+ *  - NativeAuthTimeoutError if the native flow never returns
  */
 export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
   const GoogleSignIn = await ensureInitialized();
 
+  const signInPromise = GoogleSignIn.signIn();
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(
+      () => reject(new NativeAuthTimeoutError("Native Google sign-in timed out")),
+      NATIVE_SIGN_IN_TIMEOUT_MS
+    )
+  );
+
   try {
-    const result = await GoogleSignIn.signIn();
+    const result = await Promise.race([signInPromise, timeout]);
     return {
       idToken: result.idToken,
       email: result.email,
@@ -74,6 +93,7 @@ export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
       imageUrl: result.imageUrl,
     };
   } catch (err: unknown) {
+    if (err instanceof NativeAuthTimeoutError) throw err;
     const code = (err as { code?: string })?.code ?? "";
     const message = (err as { message?: string })?.message ?? "";
     if (/CANCEL/i.test(code) || /cancel/i.test(message)) {

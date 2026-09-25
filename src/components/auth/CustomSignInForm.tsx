@@ -1,7 +1,7 @@
 "use client";
 
 import { useClerk } from "@clerk/nextjs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Loader2, Lock, Mail, AlertCircle } from "lucide-react";
@@ -13,7 +13,26 @@ export default function CustomSignInForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+  // TEMP DEBUG: shows whether native + client ID are wired up. Remove later.
+  const [debugInfo, setDebugInfo] = useState("AUTHDBG loading…");
   const router = useRouter();
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { isNativePlatform, GOOGLE_WEB_CLIENT_ID } = await import(
+          "@/lib/nativeGoogleAuth"
+        );
+        const native = await isNativePlatform();
+        const cid = GOOGLE_WEB_CLIENT_ID
+          ? `SET(${GOOGLE_WEB_CLIENT_ID.slice(0, 14)}…)`
+          : "MISSING";
+        setDebugInfo(`AUTHDBG v1 · native=${native} · clientId=${cid}`);
+      } catch (e) {
+        setDebugInfo("AUTHDBG init error: " + ((e as Error)?.message ?? String(e)));
+      }
+    })();
+  }, []);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,10 +118,15 @@ export default function CustomSignInForm() {
             setGoogleLoading(false);
             return;
           }
-          // Native failed or timed out (e.g. Google Cloud config not matching
-          // yet). Fall through to the web redirect so the user can still sign
-          // in instead of being stuck on an endless spinner.
-          console.error("Native Google Sign-In failed, falling back to web:", nativeErr);
+          // TEMP DEBUG: surface the real native failure on screen instead of
+          // silently falling back, so we can see exactly why it fails.
+          const name = (nativeErr as { name?: string })?.name ?? "";
+          const code = (nativeErr as { code?: string })?.code ?? "";
+          const msg = (nativeErr as { message?: string })?.message ?? String(nativeErr);
+          console.error("Native Google Sign-In failed:", nativeErr);
+          setError(`NATIVE FAIL [${name}${code ? "/" + code : ""}]: ${msg}`);
+          setGoogleLoading(false);
+          return;
         }
       }
 
@@ -130,6 +154,11 @@ export default function CustomSignInForm() {
         <p className="text-xs text-slate-500 mt-1">
           Access your NEET CBT mock tests, diagnostic ledger & study lobbies
         </p>
+      </div>
+
+      {/* TEMP DEBUG badge — remove once native sign-in works */}
+      <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-2 text-[10px] font-mono leading-snug text-amber-900 break-all">
+        {debugInfo}
       </div>
 
       {error && (

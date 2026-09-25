@@ -96,48 +96,55 @@ export default function CustomSignUpForm() {
     setError("");
 
     try {
-      const { Capacitor } = await import("@capacitor/core");
+      const {
+        isNativePlatform,
+        nativeGoogleSignIn,
+        NativeAuthCanceledError,
+      } = await import("@/lib/nativeGoogleAuth");
 
-      if (Capacitor.isNativePlatform()) {
+      // NATIVE PATH: OS account chooser, no browser hand-off.
+      if (await isNativePlatform()) {
         try {
-          const { GoogleSignIn } = await import("@capawesome/capacitor-google-sign-in");
-          const result = await GoogleSignIn.signIn();
+          const result = await nativeGoogleSignIn();
 
-          if (result && result.email) {
-            const res = await fetch("/api/auth/google-native", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                email: result.email,
-                firstName: result.givenName || result.displayName || undefined,
-                lastName: result.familyName || undefined,
-                photoUrl: result.imageUrl || undefined,
-                idToken: result.idToken,
-              }),
-            });
+          const res = await fetch("/api/auth/google-native", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idToken: result.idToken }),
+          });
 
-            const data = await res.json();
-            if (!res.ok || !data.token) {
-              throw new Error(data.error || "Failed to authenticate with Google");
-            }
-
-            const signInRes = await clerk.client.signIn.create({
-              strategy: "ticket",
-              ticket: data.token,
-            });
-
-            if (signInRes.status === "complete" && signInRes.createdSessionId) {
-              await clerk.setActive({ session: signInRes.createdSessionId });
-              router.push("/dashboard");
-              return;
-            }
+          const data = await res.json();
+          if (!res.ok || !data.token) {
+            throw new Error(data.error || "Failed to authenticate with Google");
           }
+
+          const signInRes = await clerk.client.signIn.create({
+            strategy: "ticket",
+            ticket: data.token,
+          });
+
+          if (signInRes.status === "complete" && signInRes.createdSessionId) {
+            await clerk.setActive({ session: signInRes.createdSessionId });
+            router.push("/dashboard");
+            return;
+          }
+          throw new Error("Could not activate your session. Please try again.");
         } catch (nativeErr: unknown) {
-          console.warn("Native Google Sign-Up fallback:", nativeErr);
+          if (nativeErr instanceof NativeAuthCanceledError) {
+            setGoogleLoading(false);
+            return;
+          }
+          // Do NOT fall back to the web redirect on native — that is the
+          // broken "kicked out to Chrome" flow. Surface the error instead.
+          console.error("Native Google Sign-Up failed:", nativeErr);
+          const msg = (nativeErr as { message?: string })?.message;
+          setError(msg || "Google sign-in failed. Please try again.");
+          setGoogleLoading(false);
+          return;
         }
       }
 
-      // Standard Web OAuth Redirect fallback
+      // WEB PATH: standard OAuth redirect (browser only).
       await clerk.client.signUp.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: "/sso-callback",

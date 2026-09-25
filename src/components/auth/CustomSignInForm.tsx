@@ -1,7 +1,7 @@
 "use client";
 
 import { useClerk } from "@clerk/nextjs";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Loader2, Lock, Mail, AlertCircle } from "lucide-react";
@@ -13,47 +13,7 @@ export default function CustomSignInForm() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
-  // TEMP DEBUG: shows whether native + client ID are wired up. Remove later.
-  const [debugInfo, setDebugInfo] = useState("AUTHDBG loading…");
-  const [logLines, setLogLines] = useState<string[]>([]);
-  const addLog = (s: string) =>
-    setLogLines((p) => [...p, `${new Date().toLocaleTimeString()} ${s}`]);
   const router = useRouter();
-
-  // Guaranteed browser-based Google sign-in (skips native entirely).
-  const handleWebSignIn = async () => {
-    if (!clerk.loaded || !clerk.client) return;
-    setGoogleLoading(true);
-    setError("");
-    try {
-      await clerk.client.signIn.authenticateWithRedirect({
-        strategy: "oauth_google",
-        redirectUrl: "/sso-callback",
-        redirectUrlComplete: "/dashboard",
-      });
-    } catch (err: unknown) {
-      const e = err as { errors?: Array<{ message?: string }>; message?: string };
-      setError(e?.errors?.[0]?.message || e?.message || "Could not connect to Google");
-      setGoogleLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const { isNativePlatform, GOOGLE_WEB_CLIENT_ID } = await import(
-          "@/lib/nativeGoogleAuth"
-        );
-        const native = await isNativePlatform();
-        const cid = GOOGLE_WEB_CLIENT_ID
-          ? `SET(${GOOGLE_WEB_CLIENT_ID.slice(0, 14)}…)`
-          : "MISSING";
-        setDebugInfo(`AUTHDBG v2 · native=${native} · clientId=${cid}`);
-      } catch (e) {
-        setDebugInfo("AUTHDBG init error: " + ((e as Error)?.message ?? String(e)));
-      }
-    })();
-  }, []);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,70 +55,15 @@ export default function CustomSignInForm() {
     }
   };
 
+  // Continue with Google: opens the Google account chooser in the browser and
+  // returns to the app automatically once an account is picked. On Android this
+  // returns via the verified App Link (assetlinks.json) + deep-link handler.
   const handleGoogleSignIn = async () => {
     if (!clerk.loaded || !clerk.client) return;
     setGoogleLoading(true);
     setError("");
-    setLogLines([]);
-    addLog("tapped");
 
     try {
-      const {
-        isNativePlatform,
-        nativeGoogleSignIn,
-        NativeAuthCanceledError,
-      } = await import("@/lib/nativeGoogleAuth");
-      addLog("lib-loaded");
-      const native = await isNativePlatform();
-      addLog("native=" + native);
-
-      // NATIVE PATH: OS account chooser, no browser hand-off.
-      if (native) {
-        try {
-          const result = await nativeGoogleSignIn((s) => addLog("stage:" + s));
-          addLog("got-token");
-
-          const res = await fetch("/api/auth/google-native", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ idToken: result.idToken }),
-          });
-
-          const data = await res.json();
-          if (!res.ok || !data.token) {
-            throw new Error(data.error || "Failed to authenticate with Google");
-          }
-
-          const signInRes = await clerk.client.signIn.create({
-            strategy: "ticket",
-            ticket: data.token,
-          });
-
-          if (signInRes.status === "complete" && signInRes.createdSessionId) {
-            await clerk.setActive({ session: signInRes.createdSessionId });
-            router.push("/dashboard");
-            return;
-          }
-          throw new Error("Could not activate your session. Please try again.");
-        } catch (nativeErr: unknown) {
-          if (nativeErr instanceof NativeAuthCanceledError) {
-            setGoogleLoading(false);
-            return;
-          }
-          // TEMP DEBUG: surface the real native failure on screen instead of
-          // silently falling back, so we can see exactly why it fails.
-          const name = (nativeErr as { name?: string })?.name ?? "";
-          const code = (nativeErr as { code?: string })?.code ?? "";
-          const msg = (nativeErr as { message?: string })?.message ?? String(nativeErr);
-          console.error("Native Google Sign-In failed:", nativeErr);
-          addLog(`ERR [${name}${code ? "/" + code : ""}]: ${msg}`);
-          setError(`NATIVE FAIL [${name}${code ? "/" + code : ""}]: ${msg}`);
-          setGoogleLoading(false);
-          return;
-        }
-      }
-
-      // WEB PATH: standard OAuth redirect (browser, or native fallback).
       await clerk.client.signIn.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: "/sso-callback",
@@ -183,28 +88,6 @@ export default function CustomSignInForm() {
           Access your NEET CBT mock tests, diagnostic ledger & study lobbies
         </p>
       </div>
-
-      {/* TEMP DEBUG badge — remove once native sign-in works */}
-      <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50 p-2 text-[10px] font-mono leading-snug text-amber-900 break-all">
-        {debugInfo}
-        {logLines.length > 0 && (
-          <div className="mt-1 border-t border-amber-200 pt-1">
-            {logLines.map((l, i) => (
-              <div key={i}>{l}</div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* TEMP: guaranteed browser sign-in while native is being fixed */}
-      <button
-        type="button"
-        onClick={handleWebSignIn}
-        disabled={googleLoading || loading}
-        className="mb-3 w-full rounded-xl border border-sky-300 bg-sky-50 py-2.5 text-xs font-bold text-sky-800 disabled:opacity-50"
-      >
-        Use browser sign-in instead
-      </button>
 
       {error && (
         <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50/80 p-3 text-xs text-rose-800 animate-in fade-in duration-200">

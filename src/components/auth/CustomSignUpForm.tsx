@@ -90,58 +90,14 @@ export default function CustomSignUpForm() {
     }
   };
 
+  // Continue with Google: opens the Google account chooser in the browser and
+  // returns to the app automatically once an account is picked.
   const handleGoogleSignUp = async () => {
     if (!clerk.loaded || !clerk.client) return;
     setGoogleLoading(true);
     setError("");
 
     try {
-      const {
-        isNativePlatform,
-        nativeGoogleSignIn,
-        NativeAuthCanceledError,
-      } = await import("@/lib/nativeGoogleAuth");
-
-      // NATIVE PATH: OS account chooser, no browser hand-off.
-      if (await isNativePlatform()) {
-        try {
-          const result = await nativeGoogleSignIn();
-
-          const res = await fetch("/api/auth/google-native", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ idToken: result.idToken }),
-          });
-
-          const data = await res.json();
-          if (!res.ok || !data.token) {
-            throw new Error(data.error || "Failed to authenticate with Google");
-          }
-
-          const signInRes = await clerk.client.signIn.create({
-            strategy: "ticket",
-            ticket: data.token,
-          });
-
-          if (signInRes.status === "complete" && signInRes.createdSessionId) {
-            await clerk.setActive({ session: signInRes.createdSessionId });
-            router.push("/dashboard");
-            return;
-          }
-          throw new Error("Could not activate your session. Please try again.");
-        } catch (nativeErr: unknown) {
-          if (nativeErr instanceof NativeAuthCanceledError) {
-            setGoogleLoading(false);
-            return;
-          }
-          // Native failed or timed out (e.g. Google Cloud config not matching
-          // yet). Fall through to the web redirect so the user can still sign
-          // in instead of being stuck on an endless spinner.
-          console.error("Native Google Sign-Up failed, falling back to web:", nativeErr);
-        }
-      }
-
-      // WEB PATH: standard OAuth redirect (browser, or native fallback).
       await clerk.client.signUp.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: "/sso-callback",

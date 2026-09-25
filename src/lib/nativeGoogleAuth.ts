@@ -36,15 +36,35 @@ export async function isNativePlatform(): Promise<boolean> {
 // The plugin's initialize() must run once per app session before signIn().
 let initialized = false;
 
-async function ensureInitialized() {
-  const { GoogleSignIn } = await import("@capawesome/capacitor-google-sign-in");
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new NativeAuthTimeoutError(`${label} timed out after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
+async function ensureInitialized(onStage?: (s: string) => void) {
+  onStage?.("import-plugin");
+  const mod = await withTimeout(
+    import("@capawesome/capacitor-google-sign-in"),
+    10000,
+    "import-plugin"
+  );
+  const GoogleSignIn = mod.GoogleSignIn;
   if (!initialized) {
     if (!GOOGLE_WEB_CLIENT_ID) {
       throw new NativeAuthConfigError(
         "Google sign-in is not configured. Missing NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID."
       );
     }
-    await GoogleSignIn.initialize({ clientId: GOOGLE_WEB_CLIENT_ID });
+    onStage?.("initialize");
+    await withTimeout(
+      GoogleSignIn.initialize({ clientId: GOOGLE_WEB_CLIENT_ID }),
+      10000,
+      "initialize"
+    );
     initialized = true;
   }
   return GoogleSignIn;
@@ -71,19 +91,18 @@ const NATIVE_SIGN_IN_TIMEOUT_MS = 15000;
  *  - NativeAuthConfigError if the client ID is missing
  *  - NativeAuthTimeoutError if the native flow never returns
  */
-export async function nativeGoogleSignIn(): Promise<NativeGoogleResult> {
-  const GoogleSignIn = await ensureInitialized();
+export async function nativeGoogleSignIn(
+  onStage?: (s: string) => void
+): Promise<NativeGoogleResult> {
+  const GoogleSignIn = await ensureInitialized(onStage);
 
-  const signInPromise = GoogleSignIn.signIn();
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(
-      () => reject(new NativeAuthTimeoutError("Native Google sign-in timed out")),
-      NATIVE_SIGN_IN_TIMEOUT_MS
-    )
-  );
-
+  onStage?.("signIn");
   try {
-    const result = await Promise.race([signInPromise, timeout]);
+    const result = await withTimeout(
+      GoogleSignIn.signIn(),
+      NATIVE_SIGN_IN_TIMEOUT_MS,
+      "signIn"
+    );
     return {
       idToken: result.idToken,
       email: result.email,

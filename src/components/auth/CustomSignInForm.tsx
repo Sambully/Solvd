@@ -27,7 +27,7 @@ export default function CustomSignInForm() {
         const cid = GOOGLE_WEB_CLIENT_ID
           ? `SET(${GOOGLE_WEB_CLIENT_ID.slice(0, 14)}…)`
           : "MISSING";
-        setDebugInfo(`AUTHDBG v1 · native=${native} · clientId=${cid}`);
+        setDebugInfo(`AUTHDBG v2 · native=${native} · clientId=${cid}`);
       } catch (e) {
         setDebugInfo("AUTHDBG init error: " + ((e as Error)?.message ?? String(e)));
       }
@@ -89,7 +89,9 @@ export default function CustomSignInForm() {
       // NATIVE PATH: OS account chooser, no browser hand-off.
       if (await isNativePlatform()) {
         try {
-          const result = await nativeGoogleSignIn();
+          const result = await nativeGoogleSignIn((s) =>
+            setDebugInfo(`AUTHDBG v2 · stage=${s}`)
+          );
 
           const res = await fetch("/api/auth/google-native", {
             method: "POST",

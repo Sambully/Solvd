@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.solvd.neet",
+      "sha256_cert_fingerprints": [
+        "61:A5:E6:5D:CD:56:53:0E:19:BC:F0:DC:9F:E3:B4:57:C6:C1:91:EF:94:5C:80:8C:FA:4B:D9:99:46:13:63:B2"
+      ]
+    }
+  }
+]

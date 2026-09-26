@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { ClerkProvider } from "@clerk/nextjs";
 import CapacitorInit from "@/components/CapacitorInit";
 import NavigationProgressBar from "@/components/NavigationProgressBar";
+import AppDownloadBanner from "@/components/AppDownloadBanner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <NavigationProgressBar />
           </Suspense>
           <CapacitorInit />
+          <AppDownloadBanner />
           {children}
         </body>
       </html>

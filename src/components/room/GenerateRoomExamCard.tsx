@@ -258,7 +258,7 @@ export default function GenerateRoomExamCard({ onRoomCreated }: GenerateRoomExam
                   Select or drop chapter notes & PDFs for the group test
                 </p>
                 <p className="mt-0.5 text-xs text-zinc-400">
-                  Supports multiple PDFs, JPG, PNG, WEBP (Up to 30 MB)
+                  Supports up to 5 PDFs/images, JPG, PNG, WEBP (Up to 10 MB total)
                 </p>
               </div>
             </div>

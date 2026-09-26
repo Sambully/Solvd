@@ -14,7 +14,12 @@ const ALLOWED_MIME_TYPES = new Set([
   "image/webp",
 ]);
 
-const MAX_TOTAL_BYTES = 30 * 1024 * 1024; // 30 MB combined
+const MAX_TOTAL_BYTES = 10 * 1024 * 1024; // 10 MB combined (keeps per-request Gemini cost bounded)
+const MAX_FILE_COUNT = 5;
+
+// Per-user daily generation cap to protect API cost from abuse/loops.
+// Override with GENERATE_DAILY_LIMIT in the environment.
+const DAILY_GENERATION_LIMIT = Number(process.env.GENERATE_DAILY_LIMIT) || 10;
 
 function inferMimeType(fileName: string, mimeType: string): string {
   if (ALLOWED_MIME_TYPES.has(mimeType)) return mimeType;
@@ -30,6 +35,20 @@ export async function POST(req: Request) {
   const user = await getOrCreateUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limit: cap the number of exam generations per user per rolling 24h.
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const usedToday = await prisma.exam.count({
+    where: { userId: user.id, createdAt: { gte: since } },
+  });
+  if (usedToday >= DAILY_GENERATION_LIMIT) {
+    return NextResponse.json(
+      {
+        error: `You've reached your daily limit of ${DAILY_GENERATION_LIMIT} exam generations. Please try again tomorrow.`,
+      },
+      { status: 429 }
+    );
   }
 
   let formData: FormData;
@@ -48,6 +67,13 @@ export async function POST(req: Request) {
   if (fileEntries.length === 0) {
     return NextResponse.json(
       { error: "Please upload at least one PDF or image file." },
+      { status: 400 }
+    );
+  }
+
+  if (fileEntries.length > MAX_FILE_COUNT) {
+    return NextResponse.json(
+      { error: `Please upload at most ${MAX_FILE_COUNT} files at a time.` },
       { status: 400 }
     );
   }
@@ -80,7 +106,7 @@ export async function POST(req: Request) {
     totalBytes += file.size;
     if (totalBytes > MAX_TOTAL_BYTES) {
       return NextResponse.json(
-        { error: "Total upload size exceeds 30 MB. Please reduce file sizes." },
+        { error: "Total upload size exceeds 10 MB. Please reduce file sizes or upload fewer pages." },
         { status: 413 }
       );
     }

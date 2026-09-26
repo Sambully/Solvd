@@ -9,6 +9,8 @@ jobs:
   build-android:
     name: Build Debug APK
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # needed to publish the APK to a GitHub Release
 
     steps:
       - name: Checkout Repository
@@ -73,3 +75,19 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+      # Publish the APK to a stable GitHub Release so the landing-page Download
+      # button can link straight to it. The tag "app-latest" is reused each
+      # build, and the asset is overwritten, so the download URL never changes:
+      #   https://github.com/<owner>/<repo>/releases/download/app-latest/solvd.apk
+      - name: Publish APK to GitHub Release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk solvd.apk
+          gh release create app-latest \
+            --title "Solvd App (latest)" \
+            --notes "Latest Solvd Android build" \
+            --latest || true
+          gh release upload app-latest solvd.apk --clobber

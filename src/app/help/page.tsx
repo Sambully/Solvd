@@ -456,7 +456,7 @@ export default function PublicHelpPage() {
                 Ready to start practicing?
               </h3>
               <p className="mt-2 text-xs sm:text-sm text-slate-300">
-                Join thousands of NEET candidates testing under authentic NTA conditions. Free till 30 October.
+                Test under authentic NTA conditions. Free till 30 October.
               </p>
               <Link
                 href="/dashboard"

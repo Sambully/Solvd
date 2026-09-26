@@ -275,7 +275,7 @@ export default function PricingPage() {
                 Ready to simulate the real NEET CBT?
               </h3>
               <p className="mt-2 text-xs sm:text-sm text-slate-300">
-                Join thousands of aspirants taking timed NCERT drills and full syllabus mocks today. Free till 30 October.
+                Take timed NCERT drills and full syllabus mocks today. Free till 30 October.
               </p>
               <Link
                 href="/dashboard"

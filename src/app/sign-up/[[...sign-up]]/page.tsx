@@ -38,7 +38,7 @@ export default function SignUpPage() {
                 Create your student account & start <span className="text-amber-500">NEET CBT</span> drills.
               </h1>
               <p className="mt-2.5 text-sm text-slate-600 leading-relaxed">
-                Join thousands of medical candidates practicing under authentic NTA conditions. Unlimited handwritten notes extraction, live peer lobbies, and detailed scorecards.
+                Practice under authentic NTA conditions. Unlimited handwritten notes extraction, live peer lobbies, and detailed scorecards.
               </p>
             </div>
 

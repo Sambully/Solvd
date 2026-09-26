@@ -137,23 +137,12 @@ export default function Home() {
             <span>Synchronized Room Timers</span>
           </div>
 
-          {/* Social Proof / Aspirants count */}
+          {/* CTA */}
           <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-black/[.06] bg-white px-4 py-2 shadow-2xs">
-            <div className="flex -space-x-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-[10px] font-black text-black ring-2 ring-white">
-                AK
-              </span>
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-black text-white ring-2 ring-white">
-                SR
-              </span>
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-black text-white ring-2 ring-white">
-                PT
-              </span>
-            </div>
             <p className="text-xs font-bold text-zinc-800">
-              12,400+ NEET aspirants and counting.{" "}
+              Built for NEET 2026 aspirants.{" "}
               <Link href="/sign-up" className="text-blue-600 hover:underline">
-                Join them →
+                Start practicing free →
               </Link>
             </p>
           </div>
@@ -639,7 +628,7 @@ export default function Home() {
           </h2>
 
           <p className="mt-3 text-sm leading-relaxed text-zinc-600 sm:text-base">
-            Join over 12,000 medical candidates practicing in genuine NTA conditions.
+            Practice under genuine NTA conditions and see your true NEET rank.
             Solvd is <strong>100% free till 30 October</strong> with zero credit card needed.
           </p>
 

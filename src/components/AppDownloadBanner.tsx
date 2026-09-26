@@ -8,7 +8,7 @@ import { X, Download, Smartphone } from "lucide-react";
 // release exists. Falls back to the releases page.
 const APK_URL =
   process.env.NEXT_PUBLIC_APK_DOWNLOAD_URL ||
-  "https://github.com/Sambully/Solvd/releases/latest";
+  "https://github.com/Sambully/Solvd/releases/download/app-latest/solvd.apk";
 
 export default function AppDownloadBanner() {
   // Dismissal is in-memory only: closing hides it for the current visit, but it

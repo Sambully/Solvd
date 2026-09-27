@@ -279,7 +279,7 @@ export default function CBTSimulatorPage() {
                     <span className="h-3 w-3 rounded-full bg-emerald-500" />
                   </div>
                   <span className="font-mono font-bold text-slate-300">
-                    nta-cbt-engine-2026.app
+                    nta-cbt-engine.app
                   </span>
                 </div>
 
@@ -540,7 +540,7 @@ export default function CBTSimulatorPage() {
 
           <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-emerald-600">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>NTA CBT 2026 Ready</span>
+            <span>NTA CBT Ready</span>
           </div>
         </div>
       </footer>

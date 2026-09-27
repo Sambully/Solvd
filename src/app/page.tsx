@@ -86,11 +86,11 @@ export default function Home() {
       {/* 2. Hero Section */}
       <section className="relative overflow-hidden pt-8 pb-16 sm:pt-16 sm:pb-24 lg:pt-20">
         <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
-          {/* NTA NEET 2026 Engine Badge */}
+          {/* NTA NEET Engine Badge */}
           <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-amber-300/80 bg-amber-50/80 px-3 py-1 sm:px-4 sm:py-1.5 text-[10.5px] sm:text-xs font-bold text-amber-900 shadow-2xs backdrop-blur-xs mb-4 sm:mb-6">
             <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-600 animate-pulse" />
-            <span className="hidden sm:inline">NTA NEET 2026 ENGINE | High-Yield Assessment Engine Active</span>
-            <span className="sm:hidden">NTA NEET 2026 ENGINE | Assessment Live</span>
+            <span className="hidden sm:inline">NTA NEET ENGINE | High-Yield Assessment Engine Active</span>
+            <span className="sm:hidden">NTA NEET ENGINE | Assessment Live</span>
           </div>
 
           {/* Main Hero Headline */}
@@ -140,7 +140,7 @@ export default function Home() {
           {/* CTA */}
           <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-black/[.06] bg-white px-4 py-2 shadow-2xs">
             <p className="text-xs font-bold text-zinc-800">
-              Built for NEET 2026 aspirants.{" "}
+              Built for NEET aspirants.{" "}
               <Link href="/sign-up" className="text-blue-600 hover:underline">
                 Start practicing free →
               </Link>
@@ -160,7 +160,7 @@ export default function Home() {
                   <span className="h-3 w-3 rounded-full bg-emerald-400" />
                 </div>
                 <span className="font-mono text-[11px] text-zinc-500 ml-2">
-                  nta-cbt-engine-2026-v4.1.app
+                  nta-cbt-engine-v4.1.app
                 </span>
               </div>
 
@@ -438,7 +438,7 @@ export default function Home() {
                       “Loss in energy when capacitors connect: ΔU = 1/2 * (C1*C2)/(C1+C2) * (V1 - V2)²”
                     </p>
                     <p className="text-amber-300">
-                      “Note: Important for NEET 2026 assertion-reason section! Common trap with polarity reversed!”
+                      “Note: Important for NEET assertion-reason section! Common trap with polarity reversed!”
                     </p>
                   </div>
                 </div>
@@ -654,7 +654,7 @@ export default function Home() {
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Free till 30 October
             </span>
             <span className="flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Updated 2026 NTA Syllabi
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Updated NTA Syllabi
             </span>
             <span className="flex items-center gap-1">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> Zero card required
@@ -683,7 +683,7 @@ export default function Home() {
 
           <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-emerald-600">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>NTA CBT 2026 Ready</span>
+            <span>NTA CBT Ready</span>
           </div>
         </div>
       </footer>

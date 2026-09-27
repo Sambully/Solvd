@@ -129,7 +129,7 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 text-[11px] sm:text-xs">
           <div className="inline-flex items-center gap-1 rounded-full border border-amber-300/80 bg-amber-50 px-2.5 py-0.5 sm:px-3 sm:py-1 font-bold text-amber-900 shadow-2xs">
             <span>🔥</span>
-            <span>14-Day Streak · NEET 2026</span>
+            <span>14-Day Streak · NEET</span>
           </div>
 
           <span className="inline-flex items-center rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 sm:px-3 sm:py-1 font-bold text-blue-700">
@@ -172,7 +172,7 @@ export default function DashboardClient({ userName, data }: DashboardClientProps
 
         <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 sm:p-3 text-[11px] sm:text-xs font-semibold text-slate-700 shadow-2xs self-start sm:self-auto">
           <span className="h-2 w-2 rounded-full bg-emerald-500" />
-          <span>NTA NEET 2026 Sync</span>
+          <span>NTA NEET Sync</span>
         </div>
       </div>
 

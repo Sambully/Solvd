@@ -91,7 +91,7 @@ export default function FeaturesPage() {
           <div className="text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-1.5 text-xs font-bold text-amber-900 shadow-2xs mb-4">
               <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-pulse" />
-              <span>NTA NEET 2026 PLATFORM ARCHITECTURE</span>
+              <span>NTA NEET PLATFORM ARCHITECTURE</span>
             </div>
 
             <h1 className="text-4xl font-black tracking-tight text-zinc-950 sm:text-6xl sm:leading-[1.1]">
@@ -702,7 +702,7 @@ export default function FeaturesPage() {
 
           <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-emerald-600">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>NTA CBT 2026 Ready</span>
+            <span>NTA CBT Ready</span>
           </div>
         </div>
       </footer>

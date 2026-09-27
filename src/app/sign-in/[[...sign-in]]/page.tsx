@@ -30,7 +30,7 @@ export default function SignInPage() {
           <div className="hidden lg:flex lg:col-span-6 flex-col gap-6 pr-4">
             <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3.5 py-1 text-xs font-bold text-indigo-700 w-fit">
               <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
-              <span>NTA CBT 2026 Simulation Platform</span>
+              <span>NTA CBT Simulation Platform</span>
             </div>
 
             <div>
@@ -101,7 +101,7 @@ export default function SignInPage() {
 
           <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-emerald-600">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>NTA CBT 2026 Ready</span>
+            <span>NTA CBT Ready</span>
           </div>
         </div>
       </footer>

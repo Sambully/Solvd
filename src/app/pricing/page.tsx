@@ -24,7 +24,7 @@ export default function PricingPage() {
   const faqs = [
     {
       q: "Is Solvd really 100% free till 30 October?",
-      a: "Yes! As part of our nationwide Early Access Launch for NEET 2026 aspirants, all premium features—including unlimited handwritten note OCR mocks, complete question banks, multiplayer study circles, and negative marking analytics—are completely free with no payment required.",
+      a: "Yes! As part of our Early Access Launch for NEET aspirants, all premium features—including unlimited handwritten note OCR mocks, complete question banks, multiplayer study circles, and negative marking analytics—are completely free with no payment required.",
     },
     {
       q: "Do I need to enter a credit card or debit card?",
@@ -35,7 +35,7 @@ export default function PricingPage() {
       a: "After October 30, you can continue using Solvd with flexible subscription plans tailored for students. Any tests, mistake ledgers, notes, and study circle data you create will remain completely safe and accessible in your account.",
     },
     {
-      q: "Is the question pattern compliant with NEET 2026 / NTA rules?",
+      q: "Is the question pattern compliant with NEET / NTA rules?",
       a: "Yes. Solvd strictly follows the latest National Testing Agency (NTA) format, including the +4/-1 marking scheme, Section A and Section B optional question mechanics, high-yield NCERT citations, and timer discipline.",
     },
   ];
@@ -96,7 +96,7 @@ export default function PricingPage() {
             </h1>
 
             <p className="mt-4 text-base leading-relaxed text-zinc-600 sm:text-lg">
-              Experience the complete Solvd NEET CBT assessment platform with zero paywalls. Everything is 100% free for all NEET 2026 aspirants until October 30.
+              Experience the complete Solvd NEET CBT assessment platform with zero paywalls. Everything is 100% free for all NEET aspirants until October 30.
             </p>
           </div>
 
@@ -309,7 +309,7 @@ export default function PricingPage() {
 
           <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-emerald-600">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>NTA CBT 2026 Ready</span>
+            <span>NTA CBT Ready</span>
           </div>
         </div>
       </footer>

@@ -6,9 +6,7 @@ import { X, Download, Smartphone } from "lucide-react";
 // Where the APK download points. Set NEXT_PUBLIC_APK_DOWNLOAD_URL to the direct
 // GitHub Release asset URL (e.g. .../releases/latest/download/solvd.apk) once the
 // release exists. Falls back to the releases page.
-const APK_URL =
-  process.env.NEXT_PUBLIC_APK_DOWNLOAD_URL ||
-  "https://github.com/Sambully/Solvd/releases/download/app-latest/solvd.apk";
+const APK_URL = process.env.NEXT_PUBLIC_APK_DOWNLOAD_URL || "/solvd.apk";
 
 export default function AppDownloadBanner() {
   // Dismissal is in-memory only: closing hides it for the current visit, but it
@@ -40,8 +38,7 @@ export default function AppDownloadBanner() {
       </p>
       <a
         href={APK_URL}
-        target="_blank"
-        rel="noopener noreferrer"
+        download
         className="flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-[11px] sm:text-xs font-bold text-slate-950 transition-colors hover:bg-amber-400"
       >
         <Download className="h-3.5 w-3.5" />

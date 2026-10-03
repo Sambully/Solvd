@@ -24,6 +24,7 @@
     "@clerk/nextjs": "^7.7.4",
     "@google/genai": "^2.18.0",
     "@prisma/client": "^6.19.3",
+    "edge-tts-universal": "^1.4.0",
     "lucide-react": "^1.33.0",
     "next": "16.3.0",
     "nodemailer": "^10.0.1",

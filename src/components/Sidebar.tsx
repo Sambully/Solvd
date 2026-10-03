@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Menu,
   X,
+  Film,
 } from "lucide-react";
 import SolvdLogo from "@/components/SolvdLogo";
 
@@ -44,6 +45,7 @@ export default function Sidebar() {
   const navItems = [
     { href: "/dashboard", label: "Home", icon: Home },
     { href: "/tests", label: "Mock Tests", icon: FileText },
+    { href: "/dashboard/notes-to-video", label: "Notes to Video", icon: Film },
     { href: "/dashboard/question-bank", label: "Question Bank", icon: BookOpen },
     { href: "/dashboard/room", label: "Study Circles", icon: Users },
     { href: "/analytics", label: "Analytics & Ledger", icon: BarChart2 },
@@ -212,11 +214,11 @@ export default function Sidebar() {
                   }`}
                 >
                   <Icon
-                    className={`h-4 w-4 ${
+                    className={`h-4 w-4 shrink-0 ${
                       isActive ? "text-emerald-400" : "text-slate-500"
                     }`}
                   />
-                  <span>{item.label}</span>
+                  <span className="truncate">{item.label}</span>
                 </Link>
               );
             })}
@@ -260,11 +262,11 @@ export default function Sidebar() {
                   }`}
                 >
                   <Icon
-                    className={`h-4 w-4 ${
+                    className={`h-4 w-4 shrink-0 ${
                       isActive ? "text-emerald-400" : "text-slate-500"
                     }`}
                   />
-                  <span>{item.label}</span>
+                  <span className="truncate">{item.label}</span>
                 </Link>
               );
             })}

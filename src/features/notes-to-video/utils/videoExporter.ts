@@ -1,4 +1,5 @@
 import type { VideoLesson, Scene } from "../types";
+import { splitNarrationIntoPhrases } from "../components/InteractiveVideoPlayer";
 
 /**
  * Client-Side Video Exporter.
@@ -175,31 +176,29 @@ function renderFrame(
   ctx.font = "bold 15px system-ui, sans-serif";
   ctx.fillText(scene.title, 140, 34);
 
-  // 4. Clean Lower-Third Subtitle Bar
-  ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-  ctx.lineWidth = 1;
+  // 4. Dynamic Phrase-by-Phrase Subtitle Pill
+  const phrases = splitNarrationIntoPhrases(scene.narration);
+  const phraseIndex = Math.min(phrases.length - 1, Math.floor(sceneProgress * phrases.length));
+  const activePhrase = phrases[phraseIndex] || scene.narration;
+
+  ctx.font = "bold 20px system-ui, sans-serif";
+  const textWidth = ctx.measureText(activePhrase).width;
+  const pillWidth = Math.max(340, textWidth + 60);
+  const pillX = (width - pillWidth) / 2;
+  const pillY = 590;
+
+  ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.roundRect(80, 580, width - 160, 90, 16);
+  ctx.roundRect(pillX, pillY, pillWidth, 54, 18);
   ctx.fill();
   ctx.stroke();
 
-  ctx.fillStyle = "#f8fafc";
-  ctx.font = "500 15px system-ui, sans-serif";
-  const words = scene.narration.split(" ");
-  let line = "";
-  let textY = 618;
-  for (const word of words) {
-    const testLine = line + word + " ";
-    if (ctx.measureText(testLine).width > width - 220) {
-      ctx.fillText(line, 105, textY);
-      line = word + " ";
-      textY += 24;
-    } else {
-      line = testLine;
-    }
-  }
-  ctx.fillText(line, 105, textY);
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "center";
+  ctx.fillText(activePhrase, width / 2, pillY + 34);
+  ctx.textAlign = "start"; // reset alignment
 
   // 5. Scrubber Bar
   const overallProgress = (sceneIndex + sceneProgress) / totalScenes;

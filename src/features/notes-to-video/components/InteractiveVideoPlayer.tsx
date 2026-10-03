@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import type { VideoLesson } from "../types";
 import SVGSceneRenderer from "./SVGSceneRenderer";
 import {
@@ -25,6 +25,50 @@ interface InteractiveVideoPlayerProps {
 
 const SPEED_OPTIONS = [1.0, 1.25, 1.5, 2.0];
 
+/**
+ * Splits a scene narration text into bite-sized natural spoken phrases (4-7 words each).
+ */
+export function splitNarrationIntoPhrases(text: string): string[] {
+  if (!text) return [];
+  const clean = text.trim();
+  const clauses = clean.split(/([.,;:!?]+)/).filter(Boolean);
+  const phrases: string[] = [];
+  let current = "";
+
+  for (let i = 0; i < clauses.length; i++) {
+    const segment = clauses[i].trim();
+    if (!segment) continue;
+
+    if (/^[.,;:!?]+$/.test(segment)) {
+      if (current) current += segment;
+    } else {
+      const words = segment.split(/\s+/);
+      if (words.length > 7) {
+        if (current) {
+          phrases.push(current.trim());
+          current = "";
+        }
+        for (let w = 0; w < words.length; w += 5) {
+          phrases.push(words.slice(w, w + 5).join(" "));
+        }
+      } else {
+        if (current && current.split(/\s+/).length + words.length > 7) {
+          phrases.push(current.trim());
+          current = segment;
+        } else {
+          current = current ? `${current} ${segment}` : segment;
+        }
+      }
+    }
+  }
+
+  if (current.trim()) {
+    phrases.push(current.trim());
+  }
+
+  return phrases.length > 0 ? phrases : [clean];
+}
+
 export default function InteractiveVideoPlayer({
   lesson,
   onExportMP4,
@@ -41,6 +85,20 @@ export default function InteractiveVideoPlayer({
   const playerContainerRef = useRef<HTMLDivElement | null>(null);
 
   const currentScene = lesson.scenes[currentSceneIdx] || lesson.scenes[0];
+
+  // Dynamic phrase chunks for active scene
+  const narrationPhrases = useMemo(() => {
+    return splitNarrationIntoPhrases(currentScene?.narration || "");
+  }, [currentScene?.narration]);
+
+  // Determine active phrase index based on current audio playback progress
+  const activePhraseIndex = useMemo(() => {
+    if (narrationPhrases.length <= 1 || duration <= 0) return 0;
+    const progressRatio = Math.min(0.999, Math.max(0, currentTime / duration));
+    return Math.floor(progressRatio * narrationPhrases.length);
+  }, [currentTime, duration, narrationPhrases.length]);
+
+  const activeSubtitleText = narrationPhrases[activePhraseIndex] || currentScene?.narration;
 
   // Sync audio source and playback state
   useEffect(() => {
@@ -107,7 +165,6 @@ export default function InteractiveVideoPlayer({
   };
 
   const handleEnded = () => {
-    // Auto advance to next scene
     if (currentSceneIdx < lesson.scenes.length - 1) {
       setCurrentSceneIdx((prev) => prev + 1);
       setCurrentTime(0);
@@ -209,14 +266,19 @@ export default function InteractiveVideoPlayer({
           <SVGSceneRenderer scene={currentScene} isPlaying={isPlaying} />
         </div>
 
-        {/* Bottom Subtitles Bar */}
-        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-2xl pointer-events-none">
-          <div className="rounded-xl bg-black/75 backdrop-blur-md border border-white/10 px-4 py-2 text-center shadow-lg">
-            <p className="text-xs sm:text-sm font-medium text-white leading-relaxed truncate">
-              {currentScene.narration}
-            </p>
+        {/* Dynamic Phrase-by-Phrase Subtitle Pill */}
+        {activeSubtitleText && (
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-xl pointer-events-none flex justify-center">
+            <div
+              key={`${currentSceneIdx}_${activePhraseIndex}`}
+              className="rounded-2xl bg-black/85 backdrop-blur-md border border-white/15 px-5 py-2.5 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+            >
+              <p className="text-sm sm:text-base font-bold text-white tracking-wide leading-snug drop-shadow-md">
+                {activeSubtitleText}
+              </p>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Bottom Control Bar */}
         <div className="relative z-20 px-4 py-2.5 bg-[#0b1329] border-t border-slate-800/80 flex flex-col gap-2">

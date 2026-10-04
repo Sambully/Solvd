@@ -52,10 +52,6 @@ export default function Sidebar() {
     { href: "/dashboard/help", label: "Help & Docs", icon: HelpCircle },
   ];
 
-  const initials = user?.firstName
-    ? `${user.firstName[0]}${user.lastName ? user.lastName[0] : ""}`
-    : "SP";
-
   // Reusable Premium Free Currently Box
   const PremiumVipCard = () => (
     <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-[#0f172a] p-3 text-white shadow-md">
@@ -106,11 +102,18 @@ export default function Sidebar() {
 
   // Reusable User Profile Box
   const UserProfileCard = () => (
-    <div className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/70 p-2 hover:bg-slate-100 transition-colors">
-      <div className="flex items-center gap-2 min-w-0">
-        <div className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-[11px] font-black text-white shadow-xs">
-          <span>{initials}</span>
-          <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+    <div className="flex items-center justify-between gap-2.5 rounded-xl border border-slate-200/80 bg-slate-50/70 p-2 hover:bg-slate-100/90 transition-colors">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className="relative shrink-0 flex items-center">
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: "h-8 w-8 rounded-lg ring-1 ring-slate-200/80 shadow-2xs",
+                userButtonTrigger: "focus:shadow-none focus:outline-hidden",
+              },
+            }}
+          />
+          <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-white pointer-events-none" />
         </div>
 
         <div className="flex flex-col min-w-0">
@@ -118,13 +121,15 @@ export default function Sidebar() {
             {user?.fullName ?? user?.firstName ?? "Samarth Pal"}
           </span>
           <span className="truncate text-[9.5px] text-slate-500 font-mono">
-            {user?.primaryEmailAddress?.emailAddress ?? "samarthpal1912005@gmail.com"}
+            {user?.primaryEmailAddress?.emailAddress ?? ""}
           </span>
         </div>
       </div>
 
-      <div className="shrink-0 flex items-center">
-        <UserButton />
+      <div className="shrink-0 flex items-center pl-1">
+        <span className="inline-flex rounded-md bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 text-[9px] font-black text-emerald-700 uppercase tracking-wider">
+          VIP
+        </span>
       </div>
     </div>
   );

@@ -181,6 +181,12 @@ export default function InteractiveVideoPlayer({
     }
   };
 
+  // Cycle speed for compact mobile button
+  const handleCycleSpeed = () => {
+    const nextIdx = (SPEED_OPTIONS.indexOf(playbackSpeed) + 1) % SPEED_OPTIONS.length;
+    handleSpeedChange(SPEED_OPTIONS[nextIdx]);
+  };
+
   // Toggle Mute
   const toggleMute = () => {
     const next = !isMuted;
@@ -237,53 +243,53 @@ export default function InteractiveVideoPlayer({
         preload="auto"
       />
 
-      {/* 1. Clean 16:9 Cinema Video Stage */}
+      {/* 1. Clean 16:9 Cinema Video Stage (Fully Responsive on All Mobile Screen Sizes) */}
       <div
         ref={playerContainerRef}
-        className={`relative w-full rounded-2xl border border-slate-800 bg-[#0f172a] shadow-xl overflow-hidden flex flex-col justify-between transition-all select-none ${
-          isFullscreen ? "h-screen rounded-none" : "aspect-video min-h-[440px]"
+        className={`relative w-full rounded-2xl sm:rounded-3xl border border-slate-800 bg-[#0f172a] shadow-xl overflow-hidden flex flex-col justify-between transition-all select-none ${
+          isFullscreen ? "h-screen rounded-none" : "w-full aspect-[16/9]"
         }`}
       >
         {/* Top Header Tag */}
-        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-4 bg-gradient-to-b from-[#0f172a]/90 to-transparent pointer-events-none">
-          <div className="flex items-center gap-2">
-            <span className="rounded-md bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 text-[11px] font-bold text-emerald-400">
+        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between p-2.5 sm:p-4 bg-gradient-to-b from-[#0f172a]/95 to-transparent pointer-events-none">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <span className="rounded-md bg-emerald-500/20 border border-emerald-500/30 px-1.5 sm:px-2 py-0.5 text-[9.5px] sm:text-[11px] font-bold text-emerald-400 shrink-0">
               Part {currentScene.sceneNumber} of {lesson.scenes.length}
             </span>
-            <span className="text-xs font-bold text-white tracking-tight">
+            <span className="text-[11px] sm:text-xs font-bold text-white tracking-tight truncate">
               {currentScene.title}
             </span>
           </div>
           {currentScene.highlightKeyword && (
-            <span className="rounded-md bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 text-[11px] font-bold text-amber-300">
+            <span className="hidden xs:inline-flex rounded-md bg-amber-500/20 border border-amber-500/30 px-1.5 sm:px-2 py-0.5 text-[9.5px] sm:text-[11px] font-bold text-amber-300 shrink-0">
               {currentScene.highlightKeyword}
             </span>
           )}
         </div>
 
         {/* Central Vector Motion Stage */}
-        <div className="flex-1 w-full h-full min-h-0 flex items-center justify-center">
+        <div className="flex-1 w-full h-full min-h-0 flex items-center justify-center p-1 sm:p-2">
           <SVGSceneRenderer scene={currentScene} isPlaying={isPlaying} />
         </div>
 
         {/* Dynamic Phrase-by-Phrase Subtitle Pill */}
         {activeSubtitleText && (
-          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-xl pointer-events-none flex justify-center">
+          <div className="absolute bottom-13 sm:bottom-16 left-1/2 -translate-x-1/2 z-20 w-[94%] max-w-xl pointer-events-none flex justify-center">
             <div
               key={`${currentSceneIdx}_${activePhraseIndex}`}
-              className="rounded-2xl bg-black/85 backdrop-blur-md border border-white/15 px-5 py-2.5 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+              className="rounded-xl sm:rounded-2xl bg-black/85 backdrop-blur-md border border-white/15 px-3.5 sm:px-5 py-1.5 sm:py-2.5 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200"
             >
-              <p className="text-sm sm:text-base font-bold text-white tracking-wide leading-snug drop-shadow-md">
+              <p className="text-xs sm:text-sm md:text-base font-bold text-white tracking-wide leading-snug drop-shadow-md">
                 {activeSubtitleText}
               </p>
             </div>
           </div>
         )}
 
-        {/* Bottom Control Bar */}
-        <div className="relative z-20 px-4 py-2.5 bg-[#0b1329] border-t border-slate-800/80 flex flex-col gap-2">
+        {/* Bottom Control Bar - Ultra Mobile Optimized */}
+        <div className="relative z-20 px-2.5 sm:px-4 py-2 sm:py-2.5 bg-[#0b1329] border-t border-slate-800/80 flex flex-col gap-1.5 sm:gap-2">
           {/* Scrubber Progress Bar */}
-          <div className="w-full flex items-center gap-1">
+          <div className="w-full flex items-center gap-1 py-0.5">
             {lesson.scenes.map((sc, idx) => {
               const isPast = idx < currentSceneIdx;
               const isCurrent = idx === currentSceneIdx;
@@ -307,65 +313,66 @@ export default function InteractiveVideoPlayer({
           </div>
 
           {/* Controls Row */}
-          <div className="flex items-center justify-between gap-3 text-slate-300 text-xs">
+          <div className="flex items-center justify-between gap-1 sm:gap-3 text-slate-300 text-xs">
             {/* Left Controls */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <button
                 type="button"
                 onClick={togglePlay}
-                className="flex items-center justify-center h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+                className="flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
                 title={isPlaying ? "Pause" : "Play"}
               >
-                {isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
+                {isPlaying ? <Pause className="h-3.5 w-3.5 fill-current" /> : <Play className="h-3.5 w-3.5 fill-current ml-0.5" />}
               </button>
 
               <button
                 type="button"
                 onClick={handlePrevScene}
                 disabled={currentSceneIdx === 0}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 transition-colors cursor-pointer"
+                className="p-1 sm:p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 transition-colors cursor-pointer shrink-0"
                 title="Previous Scene"
               >
-                <SkipBack className="h-4 w-4" />
+                <SkipBack className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
 
               <button
                 type="button"
                 onClick={handleNextScene}
                 disabled={currentSceneIdx === lesson.scenes.length - 1}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 transition-colors cursor-pointer"
+                className="p-1 sm:p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 transition-colors cursor-pointer shrink-0"
                 title="Next Scene"
               >
-                <SkipForward className="h-4 w-4" />
-              </button>
-
-              <button
-                type="button"
-                onClick={handleRestart}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-                title="Restart"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
+                <SkipForward className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </button>
 
               <button
                 type="button"
                 onClick={toggleMute}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 sm:p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
                 title={isMuted ? "Unmute" : "Mute"}
               >
-                {isMuted ? <VolumeX className="h-4 w-4 text-rose-400" /> : <Volume2 className="h-4 w-4" />}
+                {isMuted ? <VolumeX className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-rose-400" /> : <Volume2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
               </button>
 
-              <span className="font-mono text-[11px] text-slate-400 ml-1">
+              <span className="font-mono text-[10px] sm:text-[11px] text-slate-400 whitespace-nowrap">
                 {Math.floor(currentTime)}s / {Math.round(duration)}s
               </span>
             </div>
 
             {/* Right Controls */}
-            <div className="flex items-center gap-2">
-              {/* Playback Speed */}
-              <div className="flex items-center rounded-lg bg-slate-900 border border-slate-800 p-0.5">
+            <div className="flex items-center gap-1 sm:gap-2">
+              {/* Speed: Single cycle pill on small mobile */}
+              <button
+                type="button"
+                onClick={handleCycleSpeed}
+                className="sm:hidden px-2 py-0.5 text-[10.5px] font-black rounded-lg bg-slate-800 text-emerald-400 border border-slate-700 active:scale-95 transition-all"
+                title="Tap to change speed"
+              >
+                {playbackSpeed}x
+              </button>
+
+              {/* Speed: Full group on desktop/tablet */}
+              <div className="hidden sm:flex items-center rounded-lg bg-slate-900 border border-slate-800 p-0.5">
                 {SPEED_OPTIONS.map((speed) => (
                   <button
                     key={speed}
@@ -382,11 +389,13 @@ export default function InteractiveVideoPlayer({
                 ))}
               </div>
 
+              {/* Prominent Download Button */}
               {onExportMP4 && (
                 <button
                   type="button"
                   onClick={onExportMP4}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-sm transition-all active:scale-95 cursor-pointer shrink-0"
+                  title="Download MP4 Video"
                 >
                   <Download className="h-3.5 w-3.5" />
                   <span>MP4</span>
@@ -396,9 +405,10 @@ export default function InteractiveVideoPlayer({
               <button
                 type="button"
                 onClick={toggleFullscreen}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1 sm:p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                title="Fullscreen"
               >
-                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                {isFullscreen ? <Minimize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <Maximize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
               </button>
             </div>
           </div>
@@ -406,7 +416,7 @@ export default function InteractiveVideoPlayer({
       </div>
 
       {/* 2. Clean Chapter Tabs Below Player */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
         {lesson.scenes.map((scene, idx) => {
           const isActive = idx === currentSceneIdx;
           return (
@@ -414,7 +424,7 @@ export default function InteractiveVideoPlayer({
               key={idx}
               type="button"
               onClick={() => handleJumpToScene(idx)}
-              className={`shrink-0 flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+              className={`shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                 isActive
                   ? "bg-slate-900 text-white border-slate-900 shadow-sm"
                   : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900"
@@ -427,23 +437,23 @@ export default function InteractiveVideoPlayer({
               >
                 {idx + 1}
               </span>
-              <span>{scene.title}</span>
+              <span className="truncate max-w-[140px] sm:max-w-none">{scene.title}</span>
             </button>
           );
         })}
       </div>
 
       {/* 3. Key High-Yield Notes Below */}
-      <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-3">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
           <div className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4 text-emerald-600" />
-            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+            <BookOpen className="h-4 w-4 text-emerald-600 shrink-0" />
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider truncate">
               High-Yield Key Points ({currentScene.title})
             </h4>
           </div>
           {currentScene.formula && (
-            <span className="font-mono text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-lg">
+            <span className="font-mono text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-lg w-fit">
               {currentScene.formula}
             </span>
           )}

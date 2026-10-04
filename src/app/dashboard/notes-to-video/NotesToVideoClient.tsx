@@ -6,7 +6,7 @@ import { DEMO_LESSON } from "@/features/notes-to-video/demoLesson";
 import NotesUploadCard from "@/features/notes-to-video/components/NotesUploadCard";
 import InteractiveVideoPlayer from "@/features/notes-to-video/components/InteractiveVideoPlayer";
 import VideoExportModal from "@/features/notes-to-video/components/VideoExportModal";
-import { Film, ArrowLeft, CheckCircle2, Play, BookOpen, Zap } from "lucide-react";
+import { Film, ArrowLeft, Download, CheckCircle2, Play, BookOpen, Zap } from "lucide-react";
 
 export default function NotesToVideoClient() {
   const [currentLesson, setCurrentLesson] = useState<VideoLesson | null>(null);
@@ -76,14 +76,25 @@ export default function NotesToVideoClient() {
         </div>
 
         {currentLesson && (
-          <button
-            type="button"
-            onClick={() => setCurrentLesson(null)}
-            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-800 shadow-2xs transition-all cursor-pointer w-fit"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Create Another Lesson</span>
-          </button>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setIsExportModalOpen(true)}
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 text-xs font-bold shadow-sm active:scale-95 transition-all cursor-pointer"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download MP4</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCurrentLesson(null)}
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-800 shadow-2xs active:scale-95 transition-all cursor-pointer"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>New Lesson</span>
+            </button>
+          </div>
         )}
       </div>
 

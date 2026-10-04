@@ -100,16 +100,16 @@ export default function InteractiveVideoPlayer({
 
   const activeSubtitleText = narrationPhrases[activePhraseIndex] || currentScene?.narration;
 
-  // Sync audio source and playback state
+  // 1. Load new audio source when scene changes
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     if (currentScene?.audioUrl) {
       audio.src = currentScene.audioUrl;
+      audio.defaultPlaybackRate = playbackSpeed;
       audio.playbackRate = playbackSpeed;
       audio.muted = isMuted;
-      audio.load();
 
       if (isPlaying) {
         audio.play().catch((err) => {
@@ -119,9 +119,39 @@ export default function InteractiveVideoPlayer({
       }
     } else {
       audio.removeAttribute("src");
-      audio.load();
     }
-  }, [currentSceneIdx, currentScene?.audioUrl, isPlaying, playbackSpeed, isMuted]);
+  }, [currentSceneIdx, currentScene?.audioUrl]);
+
+  // 2. Sync Play / Pause state
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !currentScene?.audioUrl) return;
+
+    if (isPlaying) {
+      audio.defaultPlaybackRate = playbackSpeed;
+      audio.playbackRate = playbackSpeed;
+      audio.play().catch(() => {
+        setIsPlaying(false);
+      });
+    } else {
+      audio.pause();
+    }
+  }, [isPlaying]);
+
+  // 3. Instant Playback Speed Update (1x, 1.25x, 1.5x, 2x)
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.defaultPlaybackRate = playbackSpeed;
+    audio.playbackRate = playbackSpeed;
+  }, [playbackSpeed]);
+
+  // 4. Mute state sync
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.muted = isMuted;
+  }, [isMuted]);
 
   // Handle Play / Pause Toggle
   const togglePlay = () => {
@@ -129,18 +159,14 @@ export default function InteractiveVideoPlayer({
     if (!audio) return;
 
     if (isPlaying) {
-      audio.pause();
       setIsPlaying(false);
     } else {
-      // If at the end, restart
+      // If at the end, restart from 0
       if (currentSceneIdx === lesson.scenes.length - 1 && currentTime >= duration - 0.5) {
         setCurrentSceneIdx(0);
         setCurrentTime(0);
       }
       setIsPlaying(true);
-      audio.play().catch((err) => {
-        console.warn("Play error:", err);
-      });
     }
   };
 
@@ -157,10 +183,14 @@ export default function InteractiveVideoPlayer({
 
   const handleLoadedMetadata = () => {
     const audio = audioRef.current;
-    if (audio && audio.duration && !isNaN(audio.duration)) {
-      setDuration(audio.duration);
-    } else if (currentScene?.durationSeconds) {
-      setDuration(currentScene.durationSeconds);
+    if (audio) {
+      audio.defaultPlaybackRate = playbackSpeed;
+      audio.playbackRate = playbackSpeed;
+      if (audio.duration && !isNaN(audio.duration)) {
+        setDuration(audio.duration);
+      } else if (currentScene?.durationSeconds) {
+        setDuration(currentScene.durationSeconds);
+      }
     }
   };
 
@@ -176,8 +206,10 @@ export default function InteractiveVideoPlayer({
   // Change Playback Speed
   const handleSpeedChange = (speed: number) => {
     setPlaybackSpeed(speed);
-    if (audioRef.current) {
-      audioRef.current.playbackRate = speed;
+    const audio = audioRef.current;
+    if (audio) {
+      audio.defaultPlaybackRate = speed;
+      audio.playbackRate = speed;
     }
   };
 
@@ -189,11 +221,7 @@ export default function InteractiveVideoPlayer({
 
   // Toggle Mute
   const toggleMute = () => {
-    const next = !isMuted;
-    setIsMuted(next);
-    if (audioRef.current) {
-      audioRef.current.muted = next;
-    }
+    setIsMuted((prev) => !prev);
   };
 
   // Jump to specific scene
@@ -240,6 +268,12 @@ export default function InteractiveVideoPlayer({
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={handleEnded}
+        onPlay={() => {
+          if (audioRef.current) {
+            audioRef.current.defaultPlaybackRate = playbackSpeed;
+            audioRef.current.playbackRate = playbackSpeed;
+          }
+        }}
         preload="auto"
       />
 
@@ -380,7 +414,7 @@ export default function InteractiveVideoPlayer({
                     onClick={() => handleSpeedChange(speed)}
                     className={`px-1.5 py-0.5 text-[10px] font-bold rounded transition-all cursor-pointer ${
                       playbackSpeed === speed
-                        ? "bg-emerald-500 text-slate-950"
+                        ? "bg-emerald-500 text-slate-950 font-black"
                         : "text-slate-400 hover:text-white"
                     }`}
                   >

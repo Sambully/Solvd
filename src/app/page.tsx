@@ -25,6 +25,7 @@ import {
   Download,
 } from "lucide-react";
 import SolvdLogo from "@/components/SolvdLogo";
+import WaveParticleCanvas from "@/components/WaveParticleCanvas";
 
 export default function Home() {
   const router = useRouter();
@@ -88,7 +89,7 @@ export default function Home() {
 
       {/* 2. Hero Section */}
       <section className="relative overflow-hidden pt-8 pb-16 sm:pt-16 sm:pb-24 lg:pt-20">
-        <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
+        <div className="relative z-10 mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
           {/* NTA NEET Engine Badge */}
           <div className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-amber-300/80 bg-amber-50/80 px-3 py-1 sm:px-4 sm:py-1.5 text-[10.5px] sm:text-xs font-bold text-amber-900 shadow-2xs backdrop-blur-xs mb-4 sm:mb-6">
             <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-amber-600 animate-pulse" />
@@ -112,23 +113,36 @@ export default function Home() {
             Circles and conquer negative marking.
           </p>
 
-          {/* Primary Action Buttons */}
-          <div className="mt-8 flex flex-col items-center justify-center gap-3.5 sm:flex-row">
-            <Link
-              href="/dashboard"
-              className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-black px-7 text-sm font-bold text-white shadow-lg shadow-black/10 transition-all hover:bg-zinc-800 hover:scale-[1.02] active:scale-[0.98] sm:w-auto"
-            >
-              <Zap className="h-4 w-4 text-amber-400" />
-              <span>Launch Free CBT Mock</span>
-            </Link>
+          {/* Primary Action Buttons with Centered Background Particle Wave */}
+          <div className="relative mt-8">
+            {/* Full-width wave ribbon centered directly behind the buttons */}
+            <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-screen h-[220px] sm:h-[260px] z-0 overflow-hidden">
+              <WaveParticleCanvas
+                className="opacity-95"
+                strandCount={10}
+                waveHeight={38}
+                centerYRatio={0.5}
+                interactive={false}
+              />
+            </div>
 
-            <a
-              href="#cbt-simulator"
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-6 text-sm font-bold text-zinc-800 shadow-2xs transition-all hover:bg-zinc-50 sm:w-auto"
-            >
-              <Play className="h-3.5 w-3.5 fill-zinc-800 text-zinc-800" />
-              <span>Watch 2-Min Demo</span>
-            </a>
+            <div className="relative z-10 flex flex-col items-center justify-center gap-3.5 sm:flex-row">
+              <Link
+                href="/dashboard"
+                className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-black px-7 text-sm font-bold text-white shadow-lg shadow-black/10 transition-all hover:bg-zinc-800 hover:scale-[1.02] active:scale-[0.98] sm:w-auto"
+              >
+                <Zap className="h-4 w-4 text-amber-400" />
+                <span>Launch Free CBT Mock</span>
+              </Link>
+
+              <a
+                href="#cbt-simulator"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-6 text-sm font-bold text-zinc-800 shadow-2xs transition-all hover:bg-zinc-50 sm:w-auto"
+              >
+                <Play className="h-3.5 w-3.5 fill-zinc-800 text-zinc-800" />
+                <span>Watch 2-Min Demo</span>
+              </a>
+            </div>
           </div>
 
           {/* Micro Bullet Trust Points */}
@@ -488,11 +502,38 @@ export default function Home() {
       </section>
 
       {/* 4.5 Section: AI Notes-to-Video Studio (Animated Visual Micro-Lectures) */}
-      <section id="notes-to-video" className="border-t border-black/[.08] bg-[#090d16] py-20 text-white relative overflow-hidden">
+      <section id="notes-to-video" className="bg-[#090d16] pt-28 pb-32 sm:pt-32 sm:pb-36 lg:pt-36 lg:pb-40 text-white relative overflow-hidden">
+        {/* Top Multi-Layered Wavy Transition from Light to Dark */}
+        <div className="absolute top-0 inset-x-0 w-full overflow-hidden leading-none pointer-events-none -translate-y-[1px]">
+          <svg
+            viewBox="0 0 1440 90"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-12 sm:h-16 lg:h-20 block"
+            preserveAspectRatio="none"
+          >
+            <rect width="1440" height="90" fill="#ffffff" />
+            <path
+              d="M0,25 C320,80 640,10 960,65 C1200,95 1360,40 1440,30 L1440,90 L0,90 Z"
+              fill="#cbd5e1"
+              fillOpacity="0.45"
+            />
+            <path
+              d="M0,42 C280,95 600,28 920,78 C1180,100 1340,55 1440,48 L1440,90 L0,90 Z"
+              fill="#1e293b"
+              fillOpacity="0.55"
+            />
+            <path
+              d="M0,58 C360,105 720,45 1060,88 C1260,102 1380,72 1440,65 L1440,90 L0,90 Z"
+              fill="#090d16"
+            />
+          </svg>
+        </div>
+
         {/* Subtle background glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
         
-        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-3.5 py-1 text-xs font-bold text-amber-300 shadow-2xs mb-4 backdrop-blur-xs">
               <Sparkles className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
@@ -666,6 +707,33 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Bottom Multi-Layered Wavy Transition from Dark to Light */}
+        <div className="absolute bottom-0 inset-x-0 w-full overflow-hidden leading-none pointer-events-none translate-y-[1px]">
+          <svg
+            viewBox="0 0 1440 90"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full h-14 sm:h-20 lg:h-24 block"
+            preserveAspectRatio="none"
+          >
+            <rect width="1440" height="90" fill="#fafafa" />
+            <path
+              d="M0,0 L1440,0 L1440,24 C1320,65 1040,15 720,55 C420,90 180,45 0,70 Z"
+              fill="#cbd5e1"
+              fillOpacity="0.5"
+            />
+            <path
+              d="M0,0 L1440,0 L1440,18 C1260,52 960,10 660,45 C360,78 140,30 0,50 Z"
+              fill="#1e293b"
+              fillOpacity="0.55"
+            />
+            <path
+              d="M0,0 L1440,0 L1440,10 C1180,38 880,5 540,30 C260,50 100,18 0,32 Z"
+              fill="#090d16"
+            />
+          </svg>
+        </div>
       </section>
 
       {/* 5. Section: Bento Grid (Engineered for Top 1% Ranks) */}
@@ -825,8 +893,11 @@ export default function Home() {
       </section>
 
       {/* 6. Section: Call to Action (Free Early Access) */}
-      <section className="border-t border-black/[.06] bg-white py-20 text-center">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden border-t border-black/[.06] bg-white py-20 text-center">
+        {/* Ambient Flowing Particle Wave */}
+        <WaveParticleCanvas className="opacity-60" strandCount={8} waveHeight={38} speedMultiplier={0.8} />
+
+        <div className="relative z-10 mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-800 shadow-inner mb-6">
             <Target className="h-7 w-7" />
           </div>

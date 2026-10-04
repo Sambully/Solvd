@@ -28,6 +28,7 @@ import {
   Download,
 } from "lucide-react";
 import SolvdLogo from "@/components/SolvdLogo";
+import WaveParticleCanvas from "@/components/WaveParticleCanvas";
 
 type FeatureCategory = "ALL" | "OCR" | "VIDEO" | "CBT_SIM" | "BANK" | "CIRCLES" | "ANALYTICS";
 
@@ -90,8 +91,11 @@ export default function FeaturesPage() {
       </header>
 
       {/* 2. Hero Section */}
-      <main className="flex-1 py-14 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <main className="flex-1 py-14 sm:py-20 relative overflow-hidden">
+        {/* Dynamic Flowing Purple Particle Wave Background */}
+        <WaveParticleCanvas className="opacity-75" strandCount={10} waveHeight={48} centerYRatio={0.22} interactive={false} />
+
+        <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-1.5 text-xs font-bold text-amber-900 shadow-2xs mb-4">

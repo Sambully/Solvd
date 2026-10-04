@@ -8,7 +8,7 @@ const totalSec = Math.round(audioData.reduce((acc, a) => acc + a.duration, 0) * 
 
 const content = `import type { VideoLesson } from "./types";
 
-// Clean, Minimalist Solvd-Themed Micro-Lecture with Studio Indian Tutor Audio
+// Clean, Minimalist Solvd-Themed Micro-Lecture with Studio Tutor Audio
 export const DEMO_LESSON: VideoLesson = {
   id: "demo_krebs_cycle",
   title: "Krebs Cycle & ATP Yield",

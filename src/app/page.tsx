@@ -20,6 +20,9 @@ import {
   ChevronRight,
   Layers,
   FileCheck2,
+  Video,
+  Volume2,
+  Download,
 } from "lucide-react";
 import SolvdLogo from "@/components/SolvdLogo";
 
@@ -132,7 +135,9 @@ export default function Home() {
           <div className="mt-5 text-xs font-semibold text-zinc-500">
             <span>NTA +4/-1 Marking Scheme</span>
             <span className="mx-2 text-zinc-300">•</span>
-            <span>High-Yield Multimodal OCR</span>
+            <span>Multimodal Note OCR</span>
+            <span className="mx-2 text-zinc-300">•</span>
+            <span className="text-amber-700 font-bold">AI Video Micro-Lectures</span>
             <span className="mx-2 text-zinc-300">•</span>
             <span>Synchronized Room Timers</span>
           </div>
@@ -390,7 +395,7 @@ export default function Home() {
               difficulty calibrated with high-precision NTA assessment intelligence.
             </p>
 
-            {/* Stepper */}
+          {/* Stepper */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs font-bold text-zinc-600">
               <span className="rounded-full bg-zinc-100 px-3 py-1 text-black">
                 1. Snap Notes
@@ -405,7 +410,7 @@ export default function Home() {
               </span>
               <span>→</span>
               <span className="rounded-full bg-amber-300 px-3 py-1 text-black font-black">
-                4. Live Exam Mock
+                4. Live Exam Mock & Video Studio
               </span>
             </div>
           </div>
@@ -482,6 +487,187 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 4.5 Section: AI Notes-to-Video Studio (Animated Visual Micro-Lectures) */}
+      <section id="notes-to-video" className="border-t border-black/[.08] bg-[#090d16] py-20 text-white relative overflow-hidden">
+        {/* Subtle background glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-3.5 py-1 text-xs font-bold text-amber-300 shadow-2xs mb-4 backdrop-blur-xs">
+              <Sparkles className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+              <span>NEW FEATURE • AI VISUAL PEDAGOGY STUDIO</span>
+            </div>
+
+            <h2 className="text-3xl font-black tracking-tight sm:text-5xl sm:leading-tight">
+              Turn dense coaching notes into{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-200 to-emerald-400">
+                animated video micro-lectures.
+              </span>
+            </h2>
+
+            <p className="mt-4 text-xs sm:text-base leading-relaxed text-zinc-400">
+              Upload camera snaps of complex reactions, Krebs cycles, or physics derivations.
+              Solvd synthesizes animated 16:9 vector video lessons with clear tutor voiceover,
+              phrase-synced subtitles, and instant 1080p MP4 export.
+            </p>
+          </div>
+
+          {/* Interactive Micro-Lecture Video Showcase */}
+          <div className="mt-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* Left: 16:9 Cinema Mockup Player */}
+            <div className="lg:col-span-7 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5 shadow-2xl relative overflow-hidden">
+              <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-rose-500" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  </div>
+                  <span className="font-mono text-[11px] text-zinc-400 ml-1.5">
+                    micro-lecture-player-1080p.mp4
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold font-mono">
+                    HD 1080p
+                  </span>
+                  <span className="rounded bg-zinc-800 px-2 py-0.5 text-[10px] font-bold text-zinc-300 font-mono">
+                    1.25x Speed
+                  </span>
+                </div>
+              </div>
+
+              {/* 16:9 SVG Visual Canvas Mockup */}
+              <div className="relative aspect-video w-full rounded-xl bg-gradient-to-b from-slate-900 to-[#0a0f1d] border border-zinc-800/80 p-4 flex flex-col justify-between overflow-hidden shadow-inner">
+                {/* Scene Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded bg-amber-400 text-black px-2 py-0.5 text-[10px] font-black uppercase">
+                      Scene 2 of 4
+                    </span>
+                    <span className="text-xs font-bold text-zinc-200">
+                      Capacitor Energy Redistribution & Heat Loss
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-zinc-400">01:14 / 02:30</span>
+                </div>
+
+                {/* Animated Pedagogical Diagram in Canvas */}
+                <div className="my-auto py-2 flex flex-col items-center justify-center">
+                  <svg viewBox="0 0 380 90" className="w-full max-h-24 text-zinc-200">
+                    {/* Left Cap */}
+                    <rect x="25" y="15" width="70" height="50" rx="8" fill="#1e293b" stroke="#f59e0b" strokeWidth="1.5" />
+                    <text x="60" y="38" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#f8fafc">C₁ = 20μF</text>
+                    <text x="60" y="52" textAnchor="middle" fontSize="8" fill="#cbd5e1">V₁ = 100V</text>
+
+                    {/* Arrow / Switch Flow */}
+                    <line x1="100" y1="40" x2="160" y2="40" stroke="#38bdf8" strokeWidth="2" strokeDasharray="4 2" />
+                    <polygon points="160,37 167,40 160,43" fill="#38bdf8" />
+                    <text x="130" y="32" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#38bdf8">Switch Closed</text>
+
+                    {/* Middle Delta U formula */}
+                    <rect x="175" y="15" width="100" height="50" rx="8" fill="#0f172a" stroke="#10b981" strokeWidth="1.5" />
+                    <text x="225" y="35" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#34d399">ΔU = ½ (C₁C₂/C₁+C₂)</text>
+                    <text x="225" y="50" textAnchor="middle" fontSize="8" fill="#94a3b8">× (V₁ - V₂)²</text>
+
+                    {/* Right Cap */}
+                    <rect x="285" y="15" width="70" height="50" rx="8" fill="#1e293b" stroke="#818cf8" strokeWidth="1.5" />
+                    <text x="320" y="38" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#f8fafc">C₂ = 40μF</text>
+                    <text x="320" y="52" textAnchor="middle" fontSize="8" fill="#cbd5e1">V₂ = 0V</text>
+                  </svg>
+                </div>
+
+                {/* Phrase-Synced Subtitles Bar */}
+                <div className="w-full rounded-lg bg-black/80 backdrop-blur-md border border-white/10 px-3 py-2 text-center shadow-lg">
+                  <p className="text-xs font-semibold text-zinc-100">
+                    <span className="text-amber-300 font-bold">“When the switch closes,”</span> charges flow until common potential is reached, dissipating exactly <span className="text-emerald-400 font-bold">50% energy as heat.</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Player Bottom Controls */}
+              <div className="mt-3 flex items-center justify-between gap-3 pt-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-amber-400 text-black flex items-center justify-center font-bold shadow-sm">
+                    <Play className="h-4 w-4 fill-black ml-0.5" />
+                  </div>
+                  <div className="hidden sm:flex flex-col">
+                    <span className="text-[11px] font-bold text-zinc-200">Studio Tutor Voiceover</span>
+                    <span className="text-[9px] text-zinc-400">Synchronized Audio</span>
+                  </div>
+                </div>
+
+                {/* Time Progress Bar */}
+                <div className="flex-1 mx-2">
+                  <div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
+                    <div className="h-full w-1/2 bg-gradient-to-r from-amber-400 to-emerald-400 rounded-full" />
+                  </div>
+                </div>
+
+                {/* Interactive Mode Badge */}
+                <div className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800/80 border border-zinc-700/80 px-2.5 py-1 text-[10.5px] font-semibold text-zinc-300 font-mono">
+                  <Sparkles className="h-3 w-3 text-amber-400" />
+                  <span>Interactive Preview</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Key Value Points & Studio CTA */}
+            <div className="lg:col-span-5 space-y-5">
+              <div className="space-y-3.5">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-400/10 text-amber-400 border border-amber-400/20">
+                    <Video className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-zinc-100">16:9 Clean Vector Pedagogy</h4>
+                    <p className="mt-0.5 text-xs text-zinc-400 leading-relaxed">
+                      Converts handwritten notes and reaction mechanisms into structured visual slides with zero clutter.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-400/10 text-emerald-400 border border-emerald-400/20">
+                    <Volume2 className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-zinc-100">Natural Audio Narration & Multiplier</h4>
+                    <p className="mt-0.5 text-xs text-zinc-400 leading-relaxed">
+                      Clear educator voiceover with instant 1x, 1.25x, 1.5x, and 2x speed playback controls.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-400/10 text-blue-400 border border-blue-400/20">
+                    <Download className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold text-zinc-100">1-Click 1080p MP4 Video Export</h4>
+                    <p className="mt-0.5 text-xs text-zinc-400 leading-relaxed">
+                      Download full audio-visual MP4 files directly to your phone or laptop for offline bus & hostel revision.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <Link
+                  href="/dashboard/notes-to-video"
+                  className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-amber-400 px-6 py-3 text-xs font-black text-black shadow-md hover:bg-amber-300 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <Video className="h-4 w-4 text-black" />
+                  <span>Try Notes to Video Studio Free</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 5. Section: Bento Grid (Engineered for Top 1% Ranks) */}
       <section id="features" className="border-t border-black/[.06] bg-[#fafafa] py-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
@@ -490,11 +676,10 @@ export default function Home() {
               ENGINEERED FOR TOP 1% RANKS
             </span>
             <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-zinc-950 sm:text-4xl">
-              Built specifically for the cruelest exam in the world.
+              Engineered for high-stakes medical entrance mastery.
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
-              NEET isn&apos;t a test of knowledge. It&apos;s a test of rapid pattern recognition,
-              negative marking discipline, and raw psychological stamina.
+              NEET demands rapid pattern recognition, negative marking discipline, and high-yield conceptual clarity.
             </p>
           </div>
 
@@ -525,7 +710,35 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Card 2: True NTA CBT Simulator */}
+            {/* Card 2: AI Video Micro-Lecture Studio (NEW) */}
+            <div className="rounded-2xl border border-amber-300/80 bg-gradient-to-br from-amber-50/50 to-white p-7 shadow-xs transition-all hover:shadow-md relative overflow-hidden">
+              <div className="absolute top-4 right-4 rounded-full bg-amber-300 px-2 py-0.5 text-[9px] font-black text-black">
+                NEW
+              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 text-black shadow-xs">
+                <Video className="h-5 w-5" />
+              </div>
+              <span className="mt-4 block text-[10px] font-black uppercase tracking-wider text-amber-700">
+                AI VISUAL STUDIO
+              </span>
+              <h3 className="mt-1 text-lg font-bold text-zinc-950">
+                Notes to Video Micro-Lectures
+              </h3>
+              <p className="mt-2 text-xs leading-relaxed text-zinc-600">
+                Turn dense handwritten notes or textbook pages into dynamic 16:9 animated video lessons.
+                Complete with natural audio narration, phrase-by-phrase subtitles, speed multipliers, and
+                instant 1080p MP4 download for offline revision.
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-1.5 text-[10px] font-bold text-zinc-700">
+                <span className="rounded-md bg-white border border-amber-200 px-2 py-1">16:9 Vector Canvas</span>
+                <span className="rounded-md bg-white border border-amber-200 px-2 py-1">Voiceover Narration</span>
+                <span className="rounded-md bg-white border border-amber-200 px-2 py-1">Dynamic Subtitles</span>
+                <span className="rounded-md bg-amber-400 text-black px-2 py-1">1080p MP4 Export</span>
+              </div>
+            </div>
+
+            {/* Card 3: True NTA CBT Simulator */}
             <div className="rounded-2xl border border-black/[.08] bg-white p-7 shadow-xs transition-all hover:shadow-md">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
                 <Target className="h-5 w-5" />
@@ -548,7 +761,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Card 3: Study Circles & Trajectory */}
+            {/* Card 4: Study Circles & Trajectory */}
             <div id="study-circles" className="rounded-2xl border border-black/[.08] bg-white p-7 shadow-xs transition-all hover:shadow-md">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
                 <Users className="h-5 w-5" />
@@ -578,8 +791,8 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Card 4: Negative Marking Diagnostic */}
-            <div id="analytics" className="rounded-2xl border border-black/[.08] bg-white p-7 shadow-xs transition-all hover:shadow-md">
+            {/* Card 5: Negative Marking Diagnostic */}
+            <div id="analytics" className="md:col-span-2 rounded-2xl border border-black/[.08] bg-white p-7 shadow-xs transition-all hover:shadow-md">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
                 <AlertTriangle className="h-5 w-5" />
               </div>
@@ -587,7 +800,7 @@ export default function Home() {
                 POST-MORTEM DIAGNOSTICS
               </span>
               <h3 className="mt-1 text-lg font-bold text-zinc-950">
-                Negative Marking Diagnostic
+                Negative Marking Diagnostic & Mistake Ledger
               </h3>
               <p className="mt-2 text-xs leading-relaxed text-zinc-600">
                 A minus one is worse than zero. Solvd breaks down every mistake into 3

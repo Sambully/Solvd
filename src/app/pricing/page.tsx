@@ -147,12 +147,12 @@ export default function PricingPage() {
                 <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   {[
                     "Unlimited Handwritten Notes OCR Extraction",
+                    "AI Video Micro-Lecture Studio & 1080p MP4s",
                     "Instant High-Yield NCERT Practice Tests",
                     "Official NTA CBT Interface (+4 / -1 Marking)",
                     "Synchronized Study Circles & Live Lobbies",
                     "Automated 15-Min Gmail Test Reminders",
                     "Negative Marking Mistake Ledger & AIR",
-                    "Step-by-step Scientific Explanations",
                     "Zero Credit Card or Payment Method Needed",
                   ].map((feat, idx) => (
                     <div key={idx} className="flex items-center gap-2.5 text-xs font-semibold text-slate-700">

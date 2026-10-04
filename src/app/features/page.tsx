@@ -23,20 +23,25 @@ import {
   Eye,
   Play,
   Mail,
+  Video,
+  Volume2,
+  Download,
 } from "lucide-react";
 import SolvdLogo from "@/components/SolvdLogo";
 
-type FeatureCategory = "ALL" | "OCR" | "CBT_SIM" | "BANK" | "CIRCLES" | "ANALYTICS";
+type FeatureCategory = "ALL" | "OCR" | "VIDEO" | "CBT_SIM" | "BANK" | "CIRCLES" | "ANALYTICS";
 
 export default function FeaturesPage() {
   const [activeCategory, setActiveCategory] = useState<FeatureCategory>("ALL");
   const [interactiveStep, setInteractiveStep] = useState<number>(1);
+  const [videoSceneStep, setVideoSceneStep] = useState<number>(1);
   const [demoSelectedOption, setDemoSelectedOption] = useState<string>("B");
   const [demoPaletteFilter, setDemoPaletteFilter] = useState<string>("ALL");
 
   const categories: Array<{ id: FeatureCategory; label: string; icon: typeof Sparkles }> = [
     { id: "ALL", label: "All Features", icon: Sparkles },
     { id: "OCR", label: "Multimodal OCR", icon: Eye },
+    { id: "VIDEO", label: "Notes to Video", icon: Video },
     { id: "CBT_SIM", label: "NTA Simulator", icon: Target },
     { id: "BANK", label: "Question Bank", icon: BookOpen },
     { id: "CIRCLES", label: "Study Circles", icon: Users },
@@ -95,7 +100,7 @@ export default function FeaturesPage() {
             </div>
 
             <h1 className="text-4xl font-black tracking-tight text-zinc-950 sm:text-6xl sm:leading-[1.1]">
-              Engineered specifically for the cruelest exam in India.
+              Engineered specifically for high-stakes NEET medical entrance mastery.
             </h1>
 
             <p className="mt-5 text-base leading-relaxed text-zinc-600 sm:text-lg">
@@ -247,6 +252,214 @@ export default function FeaturesPage() {
                           <p className="text-[10px] text-emerald-400 font-bold">Correct Key: Both (A) & (R) true, (R) explains (A).</p>
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* FEATURE: AI Notes to Video Studio */}
+            {(activeCategory === "ALL" || activeCategory === "VIDEO") && (
+              <div className="rounded-3xl border border-amber-300/80 bg-gradient-to-br from-amber-50/20 via-white to-white p-6 sm:p-10 shadow-sm transition-all hover:border-amber-400/80">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                  <div className="lg:col-span-6 space-y-4">
+                    <div className="inline-flex items-center gap-1.5 rounded-md border border-amber-400/60 bg-amber-100/70 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-amber-950">
+                      <Video className="h-3 w-3 text-amber-700" />
+                      <span>AI Visual Pedagogy Studio</span>
+                    </div>
+
+                    <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-950">
+                      Notes to Animated Video Micro-Lectures
+                    </h2>
+
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                      Transform dense handwritten notes, complex reaction mechanisms, or textbook camera snaps into dynamic 16:9 vector video lessons. Features synchronized educator voiceover, phrase-by-phrase subtitles, playback speed control (1x to 2x), and 1-click 1080p MP4 export.
+                    </p>
+
+                    <div className="space-y-2.5 pt-2">
+                      {[
+                        "Multi-image and textbook camera snap OCR ingestion",
+                        "Automated pedagogical SVG concept breakdown and diagrams",
+                        "Natural educator voiceover with clear cadence and zero stutter",
+                        "Dynamic phrase subtitles highlighting formulas & key terms",
+                        "Instant client-side 1080p MP4 canvas recording for offline study",
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-2.5 text-xs font-semibold text-slate-700">
+                          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-4">
+                      <Link
+                        href="/dashboard/notes-to-video"
+                        className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-5 py-2.5 text-xs font-black text-black hover:bg-amber-300 transition-all shadow-xs hover:scale-105 active:scale-95"
+                      >
+                        <Video className="h-3.5 w-3.5 text-black" />
+                        <span>Launch Video Studio</span>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Interactive Video Studio Demo Box */}
+                  <div className="lg:col-span-6 rounded-2xl border border-slate-800 bg-[#090d16] p-5 sm:p-6 text-white shadow-xl">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-[11px] font-mono text-slate-300 font-bold">
+                          AI Micro-Lecture Player (Active)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded bg-amber-400/20 text-amber-300 border border-amber-400/30 px-2 py-0.5 text-[10px] font-mono font-bold">
+                          1080p HD
+                        </span>
+                        <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] font-mono font-bold text-slate-300">
+                          1.25x Speed
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Scene Tab Selector */}
+                    <div className="grid grid-cols-3 gap-1.5 mb-4 text-[10px] font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setVideoSceneStep(1)}
+                        className={`rounded-lg py-1.5 px-2 text-center transition-all ${
+                          videoSceneStep === 1 ? "bg-amber-400 text-black font-black" : "bg-slate-800 text-slate-400"
+                        }`}
+                      >
+                        1. Photosynthesis
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVideoSceneStep(2)}
+                        className={`rounded-lg py-1.5 px-2 text-center transition-all ${
+                          videoSceneStep === 2 ? "bg-amber-400 text-black font-black" : "bg-slate-800 text-slate-400"
+                        }`}
+                      >
+                        2. Electrostatics
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setVideoSceneStep(3)}
+                        className={`rounded-lg py-1.5 px-2 text-center transition-all ${
+                          videoSceneStep === 3 ? "bg-amber-400 text-black font-black" : "bg-slate-800 text-slate-400"
+                        }`}
+                      >
+                        3. Aldol Reaction
+                      </button>
+                    </div>
+
+                    {/* 16:9 Canvas Mockup Content */}
+                    <div className="rounded-xl border border-slate-800 bg-gradient-to-b from-slate-900 to-[#0a0f1d] p-4 text-xs min-h-[175px] flex flex-col justify-between">
+                      {videoSceneStep === 1 && (
+                        <>
+                          <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 border-b border-slate-800 pb-2">
+                            <span className="text-amber-400 font-bold">SCENE 1: Calvin Cycle (Dark Reactions)</span>
+                            <span>00:45 / 02:15</span>
+                          </div>
+                          <div className="py-2 flex items-center justify-center">
+                            <svg viewBox="0 0 340 70" className="w-full max-h-16 text-slate-200">
+                              <circle cx="60" cy="35" r="24" fill="#064e3b" stroke="#10b981" strokeWidth="1.5" />
+                              <text x="60" y="38" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#ecfdf5">RuBP (5C)</text>
+                              <line x1="88" y1="35" x2="140" y2="35" stroke="#f59e0b" strokeWidth="2" strokeDasharray="3 2" />
+                              <polygon points="140,32 146,35 140,38" fill="#f59e0b" />
+                              <text x="114" y="27" textAnchor="middle" fontSize="7.5" fontWeight="bold" fill="#fbbf24">+ CO₂ (RuBisCO)</text>
+                              <rect x="150" y="15" width="80" height="40" rx="8" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" />
+                              <text x="190" y="32" textAnchor="middle" fontSize="8.5" fontWeight="bold" fill="#f8fafc">2 × 3-PGA (3C)</text>
+                              <text x="190" y="46" textAnchor="middle" fontSize="7" fill="#94a3b8">First Stable Product</text>
+                              <line x1="235" y1="35" x2="280" y2="35" stroke="#10b981" strokeWidth="2" />
+                              <polygon points="280,32 286,35 280,38" fill="#10b981" />
+                              <circle cx="305" cy="35" r="18" fill="#312e81" stroke="#818cf8" strokeWidth="1.5" />
+                              <text x="305" y="38" textAnchor="middle" fontSize="7.5" fontWeight="bold" fill="#e0e7ff">Triose-P</text>
+                            </svg>
+                          </div>
+                          <div className="rounded-lg bg-black/80 border border-white/10 px-3 py-1.5 text-center">
+                            <p className="text-[11px] font-semibold text-slate-100">
+                              <span className="text-amber-300 font-bold">“RuBisCO enzyme”</span> fixes atmospheric CO₂ onto RuBP to produce the first stable compound, <span className="text-emerald-400 font-bold">3-phosphoglycerate.</span>
+                            </p>
+                          </div>
+                        </>
+                      )}
+
+                      {videoSceneStep === 2 && (
+                        <>
+                          <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 border-b border-slate-800 pb-2">
+                            <span className="text-amber-400 font-bold">SCENE 2: Capacitor Charge Redistribution</span>
+                            <span>01:10 / 02:20</span>
+                          </div>
+                          <div className="py-2 flex items-center justify-center">
+                            <svg viewBox="0 0 340 70" className="w-full max-h-16 text-slate-200">
+                              <rect x="20" y="15" width="65" height="40" rx="6" fill="#1e293b" stroke="#f59e0b" strokeWidth="1.5" />
+                              <text x="52" y="34" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#fff">C₁ (Charged)</text>
+                              <text x="52" y="46" textAnchor="middle" fontSize="7.5" fill="#cbd5e1">V₁ = 50V</text>
+                              <line x1="90" y1="35" x2="145" y2="35" stroke="#38bdf8" strokeWidth="2" strokeDasharray="3 2" />
+                              <polygon points="145,32 151,35 145,38" fill="#38bdf8" />
+                              <text x="118" y="27" textAnchor="middle" fontSize="7.5" fontWeight="bold" fill="#38bdf8">Switch Closed</text>
+                              <rect x="155" y="15" width="95" height="40" rx="6" fill="#0f172a" stroke="#10b981" strokeWidth="1.5" />
+                              <text x="202" y="32" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#34d399">ΔU = ½(C₁C₂/C₁+C₂)</text>
+                              <text x="202" y="45" textAnchor="middle" fontSize="7.5" fill="#94a3b8">(V₁ - V₂)²</text>
+                              <rect x="255" y="15" width="65" height="40" rx="6" fill="#1e293b" stroke="#818cf8" strokeWidth="1.5" />
+                              <text x="287" y="34" textAnchor="middle" fontSize="9" fontWeight="bold" fill="#fff">C₂ (Uncharged)</text>
+                              <text x="287" y="46" textAnchor="middle" fontSize="7.5" fill="#cbd5e1">V₂ = 0V</text>
+                            </svg>
+                          </div>
+                          <div className="rounded-lg bg-black/80 border border-white/10 px-3 py-1.5 text-center">
+                            <p className="text-[11px] font-semibold text-slate-100">
+                              <span className="text-amber-300 font-bold">“When connected,”</span> charges flow until both reach equal potential, <span className="text-emerald-400 font-bold">dissipating energy as heat.</span>
+                            </p>
+                          </div>
+                        </>
+                      )}
+
+                      {videoSceneStep === 3 && (
+                        <>
+                          <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 border-b border-slate-800 pb-2">
+                            <span className="text-amber-400 font-bold">SCENE 3: Aldol Condensation Mechanism</span>
+                            <span>01:40 / 02:00</span>
+                          </div>
+                          <div className="py-2 flex items-center justify-center">
+                            <svg viewBox="0 0 340 70" className="w-full max-h-16 text-slate-200">
+                              <rect x="15" y="15" width="80" height="40" rx="6" fill="#1e293b" stroke="#f59e0b" strokeWidth="1.5" />
+                              <text x="55" y="32" textAnchor="middle" fontSize="8.5" fontWeight="bold" fill="#fff">CH₃-CHO</text>
+                              <text x="55" y="45" textAnchor="middle" fontSize="7" fill="#cbd5e1">+ Dilute OH⁻</text>
+                              <line x1="100" y1="35" x2="145" y2="35" stroke="#ec4899" strokeWidth="2" />
+                              <polygon points="145,32 151,35 145,38" fill="#ec4899" />
+                              <text x="122" y="27" textAnchor="middle" fontSize="7" fontWeight="bold" fill="#f472b6">- H₂O</text>
+                              <rect x="155" y="15" width="85" height="40" rx="6" fill="#0f172a" stroke="#a855f7" strokeWidth="1.5" />
+                              <text x="197" y="32" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#c084fc">[:CH₂-CHO]⁻</text>
+                              <text x="197" y="45" textAnchor="middle" fontSize="7" fill="#94a3b8">Enolate Ion Nucleophile</text>
+                              <line x1="245" y1="35" x2="280" y2="35" stroke="#10b981" strokeWidth="2" />
+                              <polygon points="280,32 286,35 280,38" fill="#10b981" />
+                              <rect x="285" y="15" width="50" height="40" rx="6" fill="#064e3b" stroke="#10b981" strokeWidth="1.5" />
+                              <text x="310" y="34" textAnchor="middle" fontSize="7.5" fontWeight="bold" fill="#ecfdf5">Aldol</text>
+                              <text x="310" y="46" textAnchor="middle" fontSize="6.5" fill="#a7f3d0">β-hydroxy</text>
+                            </svg>
+                          </div>
+                          <div className="rounded-lg bg-black/80 border border-white/10 px-3 py-1.5 text-center">
+                            <p className="text-[11px] font-semibold text-slate-100">
+                              <span className="text-amber-300 font-bold">“The enolate carbanion”</span> acts as a powerful nucleophile attacking the carbonyl carbon of a second aldehyde molecule.
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Bottom Controls Bar */}
+                    <div className="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded bg-amber-400 text-black flex items-center justify-center font-bold">
+                          <Play className="h-3 w-3 fill-black ml-0.5" />
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-300">Studio Voiceover Synced</span>
+                      </div>
+                      <div className="inline-flex items-center gap-1 rounded bg-slate-800/90 text-slate-300 border border-slate-700 px-2.5 py-1 text-[10px] font-mono font-semibold">
+                        <Sparkles className="h-3 w-3 text-amber-400" />
+                        <span>Interactive Demo</span>
+                      </div>
                     </div>
                   </div>
                 </div>

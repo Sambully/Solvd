@@ -139,7 +139,7 @@ export default function NotesToVideoClient() {
                   Sample: Krebs Cycle & Energy Ledger
                 </h3>
                 <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-                  Experience full 16:9 vector animations, formula derivations, and authentic Indian tutor narration in real-time.
+                  Experience full 16:9 vector animations, formula derivations, and clear studio tutor narration in real-time.
                 </p>
               </div>
 

@@ -40,6 +40,20 @@ enum RoomStatus {
   CANCELLED
 }
 
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+}
+
+enum QuestionAnswerStatus {
+  NOT_VISITED
+  NOT_ANSWERED
+  ANSWERED
+  MARKED_FOR_REVIEW
+  ANSWERED_AND_MARKED_FOR_REVIEW
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
@@ -51,6 +65,7 @@ model User {
   uploadedMaterials   UploadedMaterial[]
   exams               Exam[]
   attempts            Attempt[]
+  examAttempts        ExamAttempt[]
   hostedTestRooms     TestRoom[]            @relation("HostedTestRooms")
   roomParticipations  RoomParticipant[]
   questionBankModules QuestionBankModule[]
@@ -97,9 +112,10 @@ model Exam {
   status          ExamStatus       @default(DRAFT)
   createdAt       DateTime         @default(now())
 
-  questions Question[]
-  attempts  Attempt[]
-  roomExams RoomExam[]
+  questions    Question[]
+  attempts     Attempt[]
+  examAttempts ExamAttempt[]
+  roomExams    RoomExam[]
 
   @@index([userId])
   @@index([materialId])
@@ -117,8 +133,55 @@ model Question {
   diagramSvg         String?
   difficulty         Difficulty @default(MEDIUM)
 
+  savedAnswers Answer[]
+
   @@index([examId])
   @@map("questions")
+}
+
+model ExamAttempt {
+  id                   String        @id @default(uuid())
+  examId               String        @map("exam_id")
+  exam                 Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  userId               String        @map("user_id")
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roomId               String?       @map("room_id")
+  room                 TestRoom?     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomExamId           String?       @map("room_exam_id")
+  roomExam             RoomExam?     @relation(fields: [roomExamId], references: [id], onDelete: SetNull)
+  status               AttemptStatus @default(IN_PROGRESS)
+  currentQuestionIndex Int           @default(0) @map("current_question_index")
+  startedAt            DateTime      @default(now()) @map("started_at")
+  expiresAt            DateTime      @map("expires_at")
+  submittedAt          DateTime?     @map("submitted_at")
+  score                Int?
+  finalizedAttemptId   String?       @unique @map("finalized_attempt_id")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+
+  savedAnswers Answer[]
+
+  @@index([userId, examId, status])
+  @@index([examId])
+  @@index([userId])
+  @@index([roomId])
+  @@index([roomExamId])
+  @@map("exam_attempts")
+}
+
+model Answer {
+  id                  String               @id @default(uuid())
+  attemptId           String               @map("attempt_id")
+  attempt             ExamAttempt          @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId          String               @map("question_id")
+  question            Question             @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOptionIndex Int?                 @map("selected_option_index")
+  status              QuestionAnswerStatus @default(NOT_ANSWERED)
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@index([questionId])
+  @@map("answers")
 }
 
 model Attempt {
@@ -154,6 +217,7 @@ model TestRoom {
   participants RoomParticipant[]
   roomExams    RoomExam[]
   attempts     Attempt[]
+  examAttempts ExamAttempt[]
 
   @@index([hostUserId])
   @@index([roomCode])
@@ -171,7 +235,8 @@ model RoomExam {
   status         RoomStatus @default(SCHEDULED)
   createdAt      DateTime   @default(now())
 
-  attempts Attempt[]
+  attempts     Attempt[]
+  examAttempts ExamAttempt[]
 
   @@index([roomId])
   @@index([examId])

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Clock,
   ChevronLeft,
@@ -12,9 +13,12 @@ import {
   Sparkles,
   Building2,
   CheckCircle2,
+  Cloud,
+  CloudOff,
 } from "lucide-react";
 import type { AnswerMap } from "@/lib/examTypes";
-import type { ExamInterfaceMode, QuestionStatusMap } from "@/lib/ntaTypes";
+import type { ExamInterfaceMode, QuestionStatus, QuestionStatusMap } from "@/lib/ntaTypes";
+import type { HydratedAttempt, AnswerUpsertInput } from "@/lib/attemptService";
 import NTAHeader from "@/components/exam/NTAHeader";
 import NTAPalette from "@/components/exam/NTAPalette";
 import NTAQuestionPane from "@/components/exam/NTAQuestionPane";
@@ -29,11 +33,14 @@ export type RunnerQuestion = {
 
 type Props = {
   examId: string;
+  roomId?: string;
+  roomExamId?: string;
   title: string;
   candidateName?: string;
   durationMinutes: number;
   questions: RunnerQuestion[];
-  onSubmit: (examId: string, answers: AnswerMap) => Promise<void>;
+  initialAttempt?: HydratedAttempt | null;
+  onSubmit: (examId: string, answers: AnswerMap, attemptId?: string) => Promise<void>;
 };
 
 function formatTime(totalSeconds: number) {
@@ -44,31 +51,74 @@ function formatTime(totalSeconds: number) {
 
 export default function ExamRunner({
   examId,
+  roomId,
+  roomExamId,
   title,
   candidateName = "Student",
   durationMinutes,
   questions,
+  initialAttempt = null,
   onSubmit,
 }: Props) {
-  const [started, setStarted] = useState(false);
-  const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<AnswerMap>({});
-  const [timeLeft, setTimeLeft] = useState(durationMinutes * 60);
+  const router = useRouter();
+
+  const [attemptId, setAttemptId] = useState<string | null>(
+    initialAttempt?.attemptId ?? null
+  );
+  const [started, setStarted] = useState<boolean>(Boolean(initialAttempt));
+  const [isStarting, setIsStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+
+  const [current, setCurrent] = useState<number>(
+    initialAttempt?.currentQuestionIndex ?? 0
+  );
+  const [answers, setAnswers] = useState<AnswerMap>(
+    () => initialAttempt?.answers ?? {}
+  );
+  const [timeLeft, setTimeLeft] = useState<number>(
+    initialAttempt ? initialAttempt.remainingSeconds : durationMinutes * 60
+  );
   const [mode, setMode] = useState<ExamInterfaceMode>("NTA_OFFICIAL");
   const [fontSize, setFontSize] = useState<"sm" | "base" | "lg">("base");
   const [showModernConfirm, setShowModernConfirm] = useState(false);
   const [showNTAConfirm, setShowNTAConfirm] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">(
+    initialAttempt ? "saved" : "idle"
+  );
   const [isPending, startTransition] = useTransition();
-  const submittedRef = useRef(false);
 
-  // Initialize and track 5-state map for NTA
+  // Initialize and track 5-state map for NTA (hydrated from DB if resuming)
   const [statusMap, setStatusMap] = useState<QuestionStatusMap>(() => {
+    if (initialAttempt?.statusMap) {
+      return initialAttempt.statusMap;
+    }
     const initial: QuestionStatusMap = {};
     questions.forEach((q, idx) => {
       initial[q.id] = idx === 0 ? "NOT_ANSWERED" : "NOT_VISITED";
     });
     return initial;
   });
+
+  // Mutable refs for concurrency safety, timer accuracy, and coalesced DB writes
+  const submittedRef = useRef(false);
+  const attemptIdRef = useRef<string | null>(initialAttempt?.attemptId ?? null);
+  const answersRef = useRef<AnswerMap>(initialAttempt?.answers ?? {});
+  const deadlineMsRef = useRef<number | null>(
+    initialAttempt ? Date.now() + initialAttempt.remainingSeconds * 1000 : null
+  );
+
+  const pendingAnswersRef = useRef<Map<string, AnswerUpsertInput>>(new Map());
+  const pendingIndexRef = useRef<number | null>(null);
+  const inFlightRef = useRef<Promise<void> | null>(null);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    attemptIdRef.current = attemptId;
+  }, [attemptId]);
+
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
 
   // Load mode preference from localStorage
   useEffect(() => {
@@ -96,11 +146,195 @@ export default function ExamRunner({
   const maxMarks = totalQuestions * 4;
   const questionIds = questions.map((q) => q.id);
 
+  // Coalesced sequential DB persistence queue (guarantees FIFO ordering & zero duplicate rows)
+  const flushPendingSaves = useCallback(async (force = false): Promise<void> => {
+    if (inFlightRef.current) {
+      await inFlightRef.current;
+      if (!force) return;
+    }
+
+    const activeAttemptId = attemptIdRef.current;
+    if (!activeAttemptId) return;
+
+    if (
+      pendingAnswersRef.current.size === 0 &&
+      pendingIndexRef.current === null
+    ) {
+      return;
+    }
+
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+
+    const runLoop = async () => {
+      while (
+        attemptIdRef.current &&
+        (!submittedRef.current || force) &&
+        (pendingAnswersRef.current.size > 0 || pendingIndexRef.current !== null)
+      ) {
+        const batchEntries = Array.from(pendingAnswersRef.current.entries());
+        pendingAnswersRef.current.clear();
+
+        const indexToSave = pendingIndexRef.current;
+        pendingIndexRef.current = null;
+
+        setSaveState("saving");
+
+        try {
+          const res = await fetch(
+            `/api/attempts/${attemptIdRef.current}/answers`,
+            {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                answers: batchEntries.map(([, val]) => val),
+                ...(indexToSave !== null
+                  ? { currentQuestionIndex: indexToSave }
+                  : {}),
+              }),
+            }
+          );
+
+          if (res.status === 410 || res.status === 409) {
+            // Attempt expired or already finalized server-side
+            submitRef.current();
+            return;
+          }
+
+          if (!res.ok) {
+            throw new Error(`Save failed with HTTP ${res.status}`);
+          }
+
+          const data = (await res.json().catch(() => null)) as {
+            remainingSeconds?: number;
+          } | null;
+
+          // Gently re-sync client deadline if server remaining time drifted > 3s
+          if (typeof data?.remainingSeconds === "number" && deadlineMsRef.current !== null) {
+            const clientRemaining = Math.max(
+              0,
+              Math.ceil((deadlineMsRef.current - Date.now()) / 1000)
+            );
+            if (Math.abs(clientRemaining - data.remainingSeconds) > 3) {
+              deadlineMsRef.current = Date.now() + data.remainingSeconds * 1000;
+              setTimeLeft(data.remainingSeconds);
+            }
+          }
+
+          setSaveState("saved");
+        } catch {
+          // Restore failed entries ONLY if not overwritten by a newer edit while in-flight
+          for (const [qId, payload] of batchEntries) {
+            if (!pendingAnswersRef.current.has(qId)) {
+              pendingAnswersRef.current.set(qId, payload);
+            }
+          }
+          if (indexToSave !== null && pendingIndexRef.current === null) {
+            pendingIndexRef.current = indexToSave;
+          }
+
+          setSaveState("error");
+          retryTimerRef.current = setTimeout(() => {
+            void flushPendingSaves();
+          }, 2000);
+          return;
+        }
+      }
+    };
+
+    const promise = runLoop().finally(() => {
+      inFlightRef.current = null;
+    });
+    inFlightRef.current = promise;
+    return promise;
+  }, []);
+
+  const enqueuePersist = useCallback(
+    (updates: AnswerUpsertInput[], nextQuestionIndex?: number) => {
+      if (!attemptIdRef.current || submittedRef.current) return;
+
+      for (const item of updates) {
+        pendingAnswersRef.current.set(item.questionId, item);
+      }
+      if (typeof nextQuestionIndex === "number") {
+        pendingIndexRef.current = nextQuestionIndex;
+      }
+
+      void flushPendingSaves();
+    },
+    [flushPendingSaves]
+  );
+
+  // Flush any dirty state with sendBeacon if the user closes/reloads the tab mid-save
+  useEffect(() => {
+    if (!started) return;
+
+    const beaconFlush = () => {
+      const id = attemptIdRef.current;
+      if (!id || submittedRef.current) return;
+      if (
+        pendingAnswersRef.current.size === 0 &&
+        pendingIndexRef.current === null
+      ) {
+        return;
+      }
+
+      const payload = {
+        answers: Array.from(pendingAnswersRef.current.values()),
+        ...(pendingIndexRef.current !== null
+          ? { currentQuestionIndex: pendingIndexRef.current }
+          : {}),
+      };
+
+      try {
+        const blob = new Blob([JSON.stringify(payload)], {
+          type: "application/json",
+        });
+        navigator.sendBeacon(`/api/attempts/${id}/answers`, blob);
+      } catch {
+        // Ignore beacon errors
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        beaconFlush();
+      } else if (
+        document.visibilityState === "visible" &&
+        deadlineMsRef.current !== null
+      ) {
+        const remaining = Math.max(
+          0,
+          Math.ceil((deadlineMsRef.current - Date.now()) / 1000)
+        );
+        setTimeLeft(remaining);
+        if (remaining <= 0) {
+          submitRef.current();
+        }
+      }
+    };
+
+    window.addEventListener("pagehide", beaconFlush);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("pagehide", beaconFlush);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+      }
+    };
+  }, [started]);
+
   const submit = () => {
     if (submittedRef.current) return;
     submittedRef.current = true;
-    startTransition(() => {
-      onSubmit(examId, answers);
+    startTransition(async () => {
+      // Wait for any in-flight or queued persistence flush before finalizing
+      await flushPendingSaves(true).catch(() => {});
+      await onSubmit(examId, answersRef.current, attemptIdRef.current ?? undefined);
     });
   };
 
@@ -109,52 +343,159 @@ export default function ExamRunner({
     submitRef.current = submit;
   });
 
-  // Countdown timer
+  // Wall-clock accurate countdown timer anchored to server remainingSeconds
   useEffect(() => {
     if (!started) return;
+    if (deadlineMsRef.current === null) {
+      deadlineMsRef.current = Date.now() + timeLeft * 1000;
+    }
+
     const id = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          clearInterval(id);
-          submitRef.current();
-          return 0;
-        }
-        return t - 1;
-      });
+      if (deadlineMsRef.current === null) return;
+      const remaining = Math.max(
+        0,
+        Math.ceil((deadlineMsRef.current - Date.now()) / 1000)
+      );
+      setTimeLeft(remaining);
+      if (remaining <= 0) {
+        clearInterval(id);
+        submitRef.current();
+      }
     }, 1000);
+
     return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started]);
 
-  // Handlers for NTA Action Bar
+  // Create or resume a persistent exam_attempts row before entering the exam
+  const handleStartExam = async () => {
+    if (isStarting) return;
+    setIsStarting(true);
+    setStartError(null);
+
+    try {
+      const res = await fetch("/api/attempts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          examId,
+          ...(roomId ? { roomId } : {}),
+          ...(roomExamId ? { roomExamId } : {}),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Unable to initialize exam session.");
+      }
+
+      if (data.status === "EXPIRED" || data.status === "ALREADY_SUBMITTED") {
+        if (!roomId && data.finalizedAttemptId) {
+          router.push(`/dashboard/attempt/${data.finalizedAttemptId}`);
+        } else {
+          router.refresh();
+        }
+        return;
+      }
+
+      const hydrated = data.attempt as HydratedAttempt;
+      attemptIdRef.current = hydrated.attemptId;
+      answersRef.current = hydrated.answers;
+      deadlineMsRef.current = Date.now() + hydrated.remainingSeconds * 1000;
+
+      setAttemptId(hydrated.attemptId);
+      setAnswers(hydrated.answers);
+      setStatusMap(hydrated.statusMap);
+      setCurrent(hydrated.currentQuestionIndex);
+      setTimeLeft(hydrated.remainingSeconds);
+      setSaveState("saved");
+      setStarted(true);
+    } catch (err) {
+      setStartError(
+        err instanceof Error ? err.message : "Failed to start exam. Please try again."
+      );
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  // Handlers for NTA Action Bar & Modern UI (optimistic UI + persistent DB upsert)
   const handleSelectOption = (optIdx: number) => {
     const q = questions[current];
-    setAnswers((prev) => ({ ...prev, [q.id]: optIdx }));
+    if (!q) return;
+
+    const nextAnswers = { ...answersRef.current, [q.id]: optIdx };
+    answersRef.current = nextAnswers;
+    setAnswers(nextAnswers);
+
+    const existingStatus = statusMap[q.id] ?? "NOT_ANSWERED";
+    const persistedStatus: QuestionStatus =
+      existingStatus === "MARKED_FOR_REVIEW" ||
+      existingStatus === "ANSWERED_AND_MARKED_FOR_REVIEW"
+        ? "ANSWERED_AND_MARKED_FOR_REVIEW"
+        : mode === "MODERN"
+        ? "ANSWERED"
+        : existingStatus;
+
+    if (persistedStatus !== existingStatus) {
+      setStatusMap((prev) => ({ ...prev, [q.id]: persistedStatus }));
+    }
+
+    enqueuePersist([
+      {
+        questionId: q.id,
+        selectedOptionIndex: optIdx,
+        status: persistedStatus,
+      },
+    ]);
   };
 
   const handleClearResponse = () => {
     const q = questions[current];
-    setAnswers((prev) => {
-      const next = { ...prev };
-      delete next[q.id];
-      return next;
-    });
+    if (!q) return;
+
+    const nextAnswers = { ...answersRef.current };
+    delete nextAnswers[q.id];
+    answersRef.current = nextAnswers;
+    setAnswers(nextAnswers);
+
     setStatusMap((prev) => ({
       ...prev,
       [q.id]: "NOT_ANSWERED",
     }));
+
+    enqueuePersist([
+      {
+        questionId: q.id,
+        selectedOptionIndex: null,
+        status: "NOT_ANSWERED",
+      },
+    ]);
   };
 
   const handleSaveAndNext = () => {
     const q = questions[current];
-    const hasAnswer = answers[q.id] !== undefined;
+    if (!q) return;
+
+    const selected = answersRef.current[q.id];
+    const hasAnswer = selected !== undefined;
+    const nextStatus: QuestionStatus = hasAnswer ? "ANSWERED" : "NOT_ANSWERED";
+    const nextIdx = current < totalQuestions - 1 ? current + 1 : current;
+    const updates: AnswerUpsertInput[] = [
+      {
+        questionId: q.id,
+        selectedOptionIndex: hasAnswer ? selected : null,
+        status: nextStatus,
+      },
+    ];
 
     setStatusMap((prev) => {
       const next: QuestionStatusMap = {
         ...prev,
-        [q.id]: hasAnswer ? "ANSWERED" : "NOT_ANSWERED",
+        [q.id]: nextStatus,
       };
-      if (current < totalQuestions - 1) {
-        const nextQ = questions[current + 1];
+      if (nextIdx !== current) {
+        const nextQ = questions[nextIdx];
         if (next[nextQ.id] === "NOT_VISITED") {
           next[nextQ.id] = "NOT_ANSWERED";
         }
@@ -162,20 +503,42 @@ export default function ExamRunner({
       return next;
     });
 
-    if (current < totalQuestions - 1) {
-      setCurrent(current + 1);
+    if (nextIdx !== current) {
+      const nextQ = questions[nextIdx];
+      if (statusMap[nextQ.id] === "NOT_VISITED") {
+        updates.push({
+          questionId: nextQ.id,
+          selectedOptionIndex: answersRef.current[nextQ.id] ?? null,
+          status: "NOT_ANSWERED",
+        });
+      }
+      setCurrent(nextIdx);
     }
+
+    enqueuePersist(updates, nextIdx);
   };
 
   const handleSaveAndMarkReview = () => {
     const q = questions[current];
+    if (!q) return;
+
+    const selected = answersRef.current[q.id];
+    const nextIdx = current < totalQuestions - 1 ? current + 1 : current;
+    const updates: AnswerUpsertInput[] = [
+      {
+        questionId: q.id,
+        selectedOptionIndex: selected !== undefined ? selected : null,
+        status: "ANSWERED_AND_MARKED_FOR_REVIEW",
+      },
+    ];
+
     setStatusMap((prev) => {
       const next: QuestionStatusMap = {
         ...prev,
         [q.id]: "ANSWERED_AND_MARKED_FOR_REVIEW",
       };
-      if (current < totalQuestions - 1) {
-        const nextQ = questions[current + 1];
+      if (nextIdx !== current) {
+        const nextQ = questions[nextIdx];
         if (next[nextQ.id] === "NOT_VISITED") {
           next[nextQ.id] = "NOT_ANSWERED";
         }
@@ -183,20 +546,42 @@ export default function ExamRunner({
       return next;
     });
 
-    if (current < totalQuestions - 1) {
-      setCurrent(current + 1);
+    if (nextIdx !== current) {
+      const nextQ = questions[nextIdx];
+      if (statusMap[nextQ.id] === "NOT_VISITED") {
+        updates.push({
+          questionId: nextQ.id,
+          selectedOptionIndex: answersRef.current[nextQ.id] ?? null,
+          status: "NOT_ANSWERED",
+        });
+      }
+      setCurrent(nextIdx);
     }
+
+    enqueuePersist(updates, nextIdx);
   };
 
   const handleMarkReviewAndNext = () => {
     const q = questions[current];
+    if (!q) return;
+
+    const selected = answersRef.current[q.id];
+    const nextIdx = current < totalQuestions - 1 ? current + 1 : current;
+    const updates: AnswerUpsertInput[] = [
+      {
+        questionId: q.id,
+        selectedOptionIndex: selected !== undefined ? selected : null,
+        status: "MARKED_FOR_REVIEW",
+      },
+    ];
+
     setStatusMap((prev) => {
       const next: QuestionStatusMap = {
         ...prev,
         [q.id]: "MARKED_FOR_REVIEW",
       };
-      if (current < totalQuestions - 1) {
-        const nextQ = questions[current + 1];
+      if (nextIdx !== current) {
+        const nextQ = questions[nextIdx];
         if (next[nextQ.id] === "NOT_VISITED") {
           next[nextQ.id] = "NOT_ANSWERED";
         }
@@ -204,21 +589,37 @@ export default function ExamRunner({
       return next;
     });
 
-    if (current < totalQuestions - 1) {
-      setCurrent(current + 1);
+    if (nextIdx !== current) {
+      const nextQ = questions[nextIdx];
+      if (statusMap[nextQ.id] === "NOT_VISITED") {
+        updates.push({
+          questionId: nextQ.id,
+          selectedOptionIndex: answersRef.current[nextQ.id] ?? null,
+          status: "NOT_ANSWERED",
+        });
+      }
+      setCurrent(nextIdx);
     }
+
+    enqueuePersist(updates, nextIdx);
   };
 
   const handleNavigateQuestion = (index: number) => {
     const targetQ = questions[index];
     if (!targetQ) return;
-    setStatusMap((prev) => {
-      if (prev[targetQ.id] === "NOT_VISITED") {
-        return { ...prev, [targetQ.id]: "NOT_ANSWERED" };
-      }
-      return prev;
-    });
+
+    const updates: AnswerUpsertInput[] = [];
+    if (statusMap[targetQ.id] === "NOT_VISITED") {
+      setStatusMap((prev) => ({ ...prev, [targetQ.id]: "NOT_ANSWERED" }));
+      updates.push({
+        questionId: targetQ.id,
+        selectedOptionIndex: answersRef.current[targetQ.id] ?? null,
+        status: "NOT_ANSWERED",
+      });
+    }
+
     setCurrent(index);
+    enqueuePersist(updates, index);
   };
 
   const answeredCount = Object.keys(answers).length;
@@ -329,11 +730,25 @@ export default function ExamRunner({
             </div>
           </div>
 
+          {startError && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700 dark:border-red-900/50 dark:bg-red-950/50 dark:text-red-300">
+              {startError}
+            </div>
+          )}
+
           <button
-            onClick={() => setStarted(true)}
-            className="mt-6 w-full rounded-xl bg-black py-3 text-sm font-bold text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 shadow-md"
+            onClick={handleStartExam}
+            disabled={isStarting}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-black py-3 text-sm font-bold text-white transition-colors hover:bg-zinc-800 disabled:opacity-60 dark:bg-white dark:text-black dark:hover:bg-zinc-200 shadow-md"
           >
-            Start Exam Now
+            {isStarting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Initializing Exam Session…
+              </>
+            ) : (
+              "Start Exam Now"
+            )}
           </button>
         </div>
       </div>
@@ -374,6 +789,7 @@ export default function ExamRunner({
           onToggleMode={() => toggleMode("MODERN")}
           fontSize={fontSize}
           onChangeFontSize={(size) => setFontSize(size)}
+          saveState={saveState}
         />
 
         {/* NTA Main Workspace */}
@@ -426,7 +842,7 @@ export default function ExamRunner({
   // ==========================================
   return (
     <div className="flex flex-1 flex-col">
-      {/* Modern Header: title + progress + timer + switch to NTA */}
+      {/* Modern Header: title + progress + sync + timer + switch to NTA */}
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-black/[.08] bg-white/95 px-6 py-4 backdrop-blur-md dark:border-white/[.1] dark:bg-black/95 select-none">
         <div className="min-w-0 pr-4">
           <div className="flex items-center gap-3">
@@ -450,6 +866,29 @@ export default function ExamRunner({
             <span>
               Left: <strong className="text-zinc-600 dark:text-zinc-300">{unattemptedCount}</strong>
             </span>
+            {saveState !== "idle" && (
+              <>
+                <span>·</span>
+                <span className="inline-flex items-center gap-1 font-medium">
+                  {saveState === "saving" ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+                      <span>Saving…</span>
+                    </>
+                  ) : saveState === "error" ? (
+                    <>
+                      <CloudOff className="h-3 w-3 text-amber-500" />
+                      <span className="text-amber-600 dark:text-amber-400">Retrying…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Cloud className="h-3 w-3 text-emerald-500" />
+                      <span className="text-emerald-600 dark:text-emerald-400">Saved</span>
+                    </>
+                  )}
+                </span>
+              </>
+            )}
           </div>
         </div>
 

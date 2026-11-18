@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import type { AnswerMap } from "@/lib/examTypes";
 import { mapShuffledToOriginalOptionIndex } from "@/lib/optionShuffle";
 import { getStudentColor } from "@/lib/roomConstants";
+import { finalizeExamAttempt } from "@/lib/attemptService";
 
 const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -605,7 +606,8 @@ export async function getRoomDetails(roomCode: string): Promise<RoomDetailsRespo
 export async function submitRoomExamAttempt(
   roomId: string,
   examId: string,
-  answers: AnswerMap
+  answers: AnswerMap,
+  attemptId?: string
 ): Promise<{ success: boolean; attemptId?: string; error?: string }> {
   try {
     const user = await getOrCreateUser();
@@ -639,6 +641,35 @@ export async function submitRoomExamAttempt(
 
     if (existingAttempt) {
       return { success: true, attemptId: existingAttempt.id };
+    }
+
+    // Prefer finalizing the persisted ExamAttempt + normalized `answers` rows
+    let resolvedExamAttemptId = attemptId;
+    if (!resolvedExamAttemptId) {
+      const activeExamAttempt = await prisma.examAttempt.findFirst({
+        where: {
+          userId: user.id,
+          examId,
+          roomId: room.id,
+          roomExamId,
+          status: "IN_PROGRESS",
+        },
+        orderBy: { startedAt: "desc" },
+        select: { id: true },
+      });
+      resolvedExamAttemptId = activeExamAttempt?.id;
+    }
+
+    if (resolvedExamAttemptId) {
+      const { finalizedAttemptId } = await finalizeExamAttempt({
+        userId: user.id,
+        attemptId: resolvedExamAttemptId,
+        finalAnswers: answers,
+      });
+
+      revalidatePath(`/dashboard/room/${room.roomCode}`);
+      revalidatePath(`/dashboard/room/${room.roomCode}/test/${examId}`);
+      return { success: true, attemptId: finalizedAttemptId };
     }
 
     const exam = await prisma.exam.findUnique({
@@ -700,9 +731,10 @@ export async function submitRoomExamAttempt(
 export async function submitRoomAttempt(
   roomId: string,
   examId: string,
-  answers: AnswerMap
+  answers: AnswerMap,
+  attemptId?: string
 ) {
-  return submitRoomExamAttempt(roomId, examId, answers);
+  return submitRoomExamAttempt(roomId, examId, answers, attemptId);
 }
 
 export type LeaderboardEntry = {

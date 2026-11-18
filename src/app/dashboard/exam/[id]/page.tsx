@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
 import { prisma } from "@/lib/prisma";
+import { getActiveExamAttempt } from "@/lib/attemptService";
 import ExamRunner, { type RunnerQuestion } from "@/components/ExamRunner";
 import { submitAttempt } from "./actions";
 
@@ -33,6 +34,19 @@ export default async function ExamPage({
     options: q.options as string[],
   }));
 
+  const activeAttempt = await getActiveExamAttempt({
+    userId: user.id,
+    examId: exam.id,
+    roomId: null,
+    roomExamId: null,
+    orderedQuestionIds: questions.map((q) => q.id),
+  });
+
+  // If an in-progress attempt expired while the user was away, auto-finalized -> go straight to results
+  if (activeAttempt.status === "EXPIRED") {
+    redirect(`/dashboard/attempt/${activeAttempt.finalizedAttemptId}`);
+  }
+
   return (
     <ExamRunner
       examId={exam.id}
@@ -40,6 +54,7 @@ export default async function ExamPage({
       candidateName={user.name}
       durationMinutes={exam.durationMinutes}
       questions={questions}
+      initialAttempt={activeAttempt.status === "IN_PROGRESS" ? activeAttempt.attempt : null}
       onSubmit={submitAttempt}
     />
   );

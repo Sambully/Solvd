@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, ZoomIn, ZoomOut, RotateCcw, Sparkles } from "lucide-react";
+import { Clock, Sparkles, Cloud, CloudOff, Loader2 } from "lucide-react";
 import type { ExamInterfaceMode } from "@/lib/ntaTypes";
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
   onToggleMode: () => void;
   fontSize: "sm" | "base" | "lg";
   onChangeFontSize: (size: "sm" | "base" | "lg") => void;
+  saveState?: "idle" | "saving" | "saved" | "error";
 }
 
 function formatTime(totalSeconds: number) {
@@ -28,6 +29,7 @@ export default function NTAHeader({
   onToggleMode,
   fontSize,
   onChangeFontSize,
+  saveState = "idle",
 }: Props) {
   const isLowTime = timeLeft <= 300; // 5 min warning
 
@@ -108,8 +110,37 @@ export default function NTAHeader({
           </div>
         </div>
 
-        {/* Right: Authentic NTA Countdown Timer */}
-        <div className="flex items-center gap-2">
+        {/* Right: Sync Status + Authentic NTA Countdown Timer */}
+        <div className="flex items-center gap-2.5">
+          {saveState !== "idle" && (
+            <span
+              className={`hidden sm:inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold border ${
+                saveState === "saving"
+                  ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300"
+                  : saveState === "error"
+                  ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+              }`}
+            >
+              {saveState === "saving" ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Saving…</span>
+                </>
+              ) : saveState === "error" ? (
+                <>
+                  <CloudOff className="h-3 w-3" />
+                  <span>Retrying sync…</span>
+                </>
+              ) : (
+                <>
+                  <Cloud className="h-3 w-3" />
+                  <span>Saved</span>
+                </>
+              )}
+            </span>
+          )}
+
           <div
             className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-bold tracking-widest tabular-nums border ${
               isLowTime

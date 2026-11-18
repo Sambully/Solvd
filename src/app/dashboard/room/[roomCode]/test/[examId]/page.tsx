@@ -10,6 +10,7 @@ import {
 } from "@/lib/roomActions";
 import { shuffleOptionsForParticipant } from "@/lib/optionShuffle";
 import { getStudentColor } from "@/lib/roomConstants";
+import { getActiveExamAttempt } from "@/lib/attemptService";
 import RoomTestWaitingLobby from "@/components/room/RoomTestWaitingLobby";
 import RoomExamClient from "@/components/room/RoomExamClient";
 import RoomLeaderboardChart from "@/components/room/RoomLeaderboardChart";
@@ -104,10 +105,24 @@ export default async function RoomTestPage({
     color: getStudentColor(idx),
   }));
 
+  // Check for an active or expired persisted ExamAttempt for this participant
+  const orderedQuestionIds = exam.questions.map((q) => q.id);
+  const activeAttemptCheck = !userAttempt
+    ? await getActiveExamAttempt({
+        userId: user.id,
+        examId: exam.id,
+        roomId: room.id,
+        roomExamId: roomExam.id,
+        orderedQuestionIds,
+      })
+    : { status: "NONE" as const };
+
+  const hasFinalizedAttempt = Boolean(userAttempt) || activeAttemptCheck.status === "EXPIRED";
+
   // =========================================================================
   // Phase 1: Pre-Scheduled Lobby (Before Scheduled Start Time)
   // =========================================================================
-  if (!isPastScheduled && !userAttempt) {
+  if (!isPastScheduled && !hasFinalizedAttempt) {
     return (
       <RoomTestWaitingLobby
         roomCode={room.roomCode}
@@ -125,7 +140,7 @@ export default async function RoomTestPage({
   // =========================================================================
   // Phase 2: Results & Leaderboard (If User Already Submitted or Expired)
   // =========================================================================
-  if (userAttempt || isWindowExpired) {
+  if (hasFinalizedAttempt || isWindowExpired) {
     const resultsRes = await getRoomExamLeaderboard(room.roomCode, examId);
 
     return (
@@ -202,12 +217,16 @@ export default async function RoomTestPage({
   return (
     <RoomExamClient
       roomId={room.id}
+      roomExamId={roomExam.id}
       examId={exam.id}
       roomCode={room.roomCode}
       title={exam.title}
       durationMinutes={durationMinutes}
       candidateName={user.name}
       questions={shuffledQuestions}
+      initialAttempt={
+        activeAttemptCheck.status === "IN_PROGRESS" ? activeAttemptCheck.attempt : null
+      }
     />
   );
 }

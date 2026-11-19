@@ -40,6 +40,10 @@ type Props = {
   durationMinutes: number;
   questions: RunnerQuestion[];
   initialAttempt?: HydratedAttempt | null;
+  attemptInfo?: {
+    currentAttemptNumber: number;
+    maxAttempts: number;
+  };
   onSubmit: (examId: string, answers: AnswerMap, attemptId?: string) => Promise<void>;
 };
 
@@ -58,6 +62,7 @@ export default function ExamRunner({
   durationMinutes,
   questions,
   initialAttempt = null,
+  attemptInfo,
   onSubmit,
 }: Props) {
   const router = useRouter();
@@ -642,6 +647,15 @@ export default function ExamRunner({
           <p className="mt-1 text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
             NEET (UG) Computer-Based Test Simulation
           </p>
+
+          {attemptInfo && (
+            <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[11px] font-bold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 shadow-2xs">
+              <Award className="h-3.5 w-3.5 text-amber-500" />
+              <span>
+                Attempt {attemptInfo.currentAttemptNumber} of {attemptInfo.maxAttempts}
+              </span>
+            </div>
+          )}
 
           <div className="mt-5 grid grid-cols-3 gap-3 rounded-xl bg-zinc-50 p-4 dark:bg-zinc-900/50">
             <div>

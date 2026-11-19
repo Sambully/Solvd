@@ -140,7 +140,7 @@ model Question {
 }
 
 model ExamAttempt {
-  id                   String        @id @default(uuid())
+  id                   String        @id @default(uuid()) @map("attempt_id")
   examId               String        @map("exam_id")
   exam                 Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
   userId               String        @map("user_id")
@@ -169,7 +169,7 @@ model ExamAttempt {
 }
 
 model Answer {
-  id                  String               @id @default(uuid())
+  id                  String               @id @default(uuid()) @map("answer_id")
   attemptId           String               @map("attempt_id")
   attempt             ExamAttempt          @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   questionId          String               @map("question_id")

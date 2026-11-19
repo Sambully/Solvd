@@ -3,6 +3,11 @@ import type { AnswerMap } from "@/lib/examTypes";
 import type { QuestionStatus, QuestionStatusMap } from "@/lib/ntaTypes";
 import { mapShuffledToOriginalOptionIndex } from "@/lib/optionShuffle";
 
+export const MAX_EXAM_ATTEMPTS = Number(process.env.MAX_EXAM_ATTEMPTS) || 3;
+export const MAX_ROOM_ATTEMPTS = 1;
+export const MAX_CONCURRENT_ATTEMPTS = Number(process.env.MAX_CONCURRENT_ATTEMPTS) || 2;
+export const DAILY_EXAM_ATTEMPT_LIMIT = Number(process.env.DAILY_EXAM_ATTEMPT_LIMIT) || 20;
+
 export type HydratedAttempt = {
   attemptId: string;
   startedAt: string;
@@ -18,6 +23,32 @@ export type AnswerUpsertInput = {
   selectedOptionIndex: number | null;
   status?: QuestionStatus;
 };
+
+export interface EligibilityResult {
+  eligible: boolean;
+  reason:
+    | "ELIGIBLE"
+    | "RESUME"
+    | "EXPIRED"
+    | "NOT_AUTHENTICATED"
+    | "EXAM_NOT_FOUND"
+    | "UNAUTHORIZED"
+    | "ROOM_NOT_FOUND"
+    | "NOT_ROOM_MEMBER"
+    | "ROOM_TEST_NOT_STARTED"
+    | "ROOM_TEST_EXPIRED"
+    | "ROOM_ATTEMPT_LIMIT_REACHED"
+    | "EXAM_ATTEMPT_LIMIT_REACHED"
+    | "CONCURRENT_LIMIT_REACHED"
+    | "DAILY_LIMIT_REACHED";
+  error?: string;
+  existingAttemptId?: string;
+  finalizedAttemptId?: string;
+  activeAttempt?: HydratedAttempt;
+  maxAttempts: number;
+  attemptsUsed: number;
+  remainingAttempts: number;
+}
 
 const VALID_STATUSES = new Set<QuestionStatus>([
   "NOT_VISITED",
@@ -139,7 +170,288 @@ export async function getActiveExamAttempt(params: {
 }
 
 /**
+ * Validates backend eligibility and attempt limits before creating or resuming an exam attempt.
+ * Enforces:
+ * 1. Active in-progress attempt reuse (Rule: never duplicate attempt ID on refresh)
+ * 2. Room membership, schedule window, and strict 1-attempt limit per participant
+ * 3. Solo exam ownership and max attempt limit (default: 3)
+ * 4. Platform-wide concurrent active attempt limits (default: 2)
+ * 5. Rolling daily attempt limits (default: 20 per 24 hours)
+ */
+export async function checkExamAttemptEligibility(params: {
+  userId: string;
+  examId: string;
+  roomId?: string | null;
+  roomExamId?: string | null;
+  orderedQuestionIds?: string[];
+}): Promise<EligibilityResult> {
+  const { userId, examId, roomId = null, roomExamId = null, orderedQuestionIds = [] } = params;
+
+  if (!userId) {
+    return {
+      eligible: false,
+      reason: "NOT_AUTHENTICATED",
+      error: "Authentication required to attempt exams.",
+      maxAttempts: 1,
+      attemptsUsed: 0,
+      remainingAttempts: 0,
+    };
+  }
+
+  // 1. Check if user already has an active IN_PROGRESS attempt for this exact exam/room
+  const activeCheck = await getActiveExamAttempt({
+    userId,
+    examId,
+    roomId,
+    roomExamId,
+    orderedQuestionIds,
+  });
+
+  if (activeCheck.status === "IN_PROGRESS") {
+    return {
+      eligible: true,
+      reason: "RESUME",
+      existingAttemptId: activeCheck.attempt.attemptId,
+      activeAttempt: activeCheck.attempt,
+      maxAttempts: roomId ? MAX_ROOM_ATTEMPTS : MAX_EXAM_ATTEMPTS,
+      attemptsUsed: 0,
+      remainingAttempts: 1,
+    };
+  }
+
+  if (activeCheck.status === "EXPIRED") {
+    return {
+      eligible: false,
+      reason: "EXPIRED",
+      finalizedAttemptId: activeCheck.finalizedAttemptId,
+      error: "Your previous exam session has expired.",
+      maxAttempts: roomId ? MAX_ROOM_ATTEMPTS : MAX_EXAM_ATTEMPTS,
+      attemptsUsed: 1,
+      remainingAttempts: 0,
+    };
+  }
+
+  // 2. Room Exam Specific Checks
+  if (roomId) {
+    const room = await prisma.testRoom.findUnique({
+      where: { id: roomId },
+      include: {
+        participants: { where: { userId }, select: { id: true } },
+        roomExams: {
+          where: { examId },
+          include: {
+            exam: { select: { id: true, durationMinutes: true } },
+          },
+        },
+      },
+    });
+
+    if (!room) {
+      return {
+        eligible: false,
+        reason: "ROOM_NOT_FOUND",
+        error: "Study circle room not found.",
+        maxAttempts: MAX_ROOM_ATTEMPTS,
+        attemptsUsed: 0,
+        remainingAttempts: 0,
+      };
+    }
+
+    if (room.participants.length === 0) {
+      return {
+        eligible: false,
+        reason: "NOT_ROOM_MEMBER",
+        error: "You are not a member of this study circle room.",
+        maxAttempts: MAX_ROOM_ATTEMPTS,
+        attemptsUsed: 0,
+        remainingAttempts: 0,
+      };
+    }
+
+    const roomExam = room.roomExams[0];
+    if (!roomExam) {
+      return {
+        eligible: false,
+        reason: "EXAM_NOT_FOUND",
+        error: "Test not found in this study circle.",
+        maxAttempts: MAX_ROOM_ATTEMPTS,
+        attemptsUsed: 0,
+        remainingAttempts: 0,
+      };
+    }
+
+    const now = Date.now();
+    const scheduledMs = new Date(roomExam.scheduledAt).getTime();
+    const durationMinutes = roomExam.exam.durationMinutes || 180;
+    const roomDeadlineMs = scheduledMs + (durationMinutes + 15) * 60 * 1000;
+
+    // Room Test schedule timing
+    if (now < scheduledMs - 5 * 60 * 1000) {
+      return {
+        eligible: false,
+        reason: "ROOM_TEST_NOT_STARTED",
+        error: "This room test has not started yet. Please wait in the lobby.",
+        maxAttempts: MAX_ROOM_ATTEMPTS,
+        attemptsUsed: 0,
+        remainingAttempts: 1,
+      };
+    }
+
+    if (now > roomDeadlineMs) {
+      return {
+        eligible: false,
+        reason: "ROOM_TEST_EXPIRED",
+        error: "The testing window for this study circle mock has ended.",
+        maxAttempts: MAX_ROOM_ATTEMPTS,
+        attemptsUsed: 1,
+        remainingAttempts: 0,
+      };
+    }
+
+    // Room Attempt Limit (Strictly 1 attempt)
+    const existingRoomAttempt = await prisma.attempt.findFirst({
+      where: {
+        userId,
+        examId,
+        roomId,
+        submittedAt: { not: null },
+      },
+      select: { id: true },
+    });
+
+    if (existingRoomAttempt) {
+      return {
+        eligible: false,
+        reason: "ROOM_ATTEMPT_LIMIT_REACHED",
+        finalizedAttemptId: existingRoomAttempt.id,
+        error: "Each participant is limited to 1 attempt for a Study Circle mock test.",
+        maxAttempts: MAX_ROOM_ATTEMPTS,
+        attemptsUsed: 1,
+        remainingAttempts: 0,
+      };
+    }
+
+    return {
+      eligible: true,
+      reason: "ELIGIBLE",
+      maxAttempts: MAX_ROOM_ATTEMPTS,
+      attemptsUsed: 0,
+      remainingAttempts: 1,
+    };
+  }
+
+  // 3. Solo Exam Specific Checks
+  const exam = await prisma.exam.findFirst({
+    where: { id: examId },
+    select: { id: true, userId: true, status: true },
+  });
+
+  if (!exam) {
+    return {
+      eligible: false,
+      reason: "EXAM_NOT_FOUND",
+      error: "Exam not found.",
+      maxAttempts: MAX_EXAM_ATTEMPTS,
+      attemptsUsed: 0,
+      remainingAttempts: 0,
+    };
+  }
+
+  if (exam.userId !== userId) {
+    return {
+      eligible: false,
+      reason: "UNAUTHORIZED",
+      error: "You do not have permission to attempt this private exam.",
+      maxAttempts: MAX_EXAM_ATTEMPTS,
+      attemptsUsed: 0,
+      remainingAttempts: 0,
+    };
+  }
+
+  // Solo Exam Attempt Limit (Completed attempts)
+  const completedAttempts = await prisma.attempt.count({
+    where: {
+      userId,
+      examId,
+      roomId: null,
+      submittedAt: { not: null },
+    },
+  });
+
+  if (completedAttempts >= MAX_EXAM_ATTEMPTS) {
+    const latest = await prisma.attempt.findFirst({
+      where: { userId, examId, roomId: null, submittedAt: { not: null } },
+      orderBy: { submittedAt: "desc" },
+      select: { id: true },
+    });
+
+    return {
+      eligible: false,
+      reason: "EXAM_ATTEMPT_LIMIT_REACHED",
+      finalizedAttemptId: latest?.id,
+      error: `You have reached the maximum limit of ${MAX_EXAM_ATTEMPTS} attempts for this exam.`,
+      maxAttempts: MAX_EXAM_ATTEMPTS,
+      attemptsUsed: completedAttempts,
+      remainingAttempts: 0,
+    };
+  }
+
+  // 4. Platform-Wide Limits: Concurrent in-progress attempts
+  const concurrentActive = await prisma.examAttempt.count({
+    where: {
+      userId,
+      status: "IN_PROGRESS",
+      expiresAt: { gt: new Date() },
+    },
+  });
+
+  if (concurrentActive >= MAX_CONCURRENT_ATTEMPTS) {
+    return {
+      eligible: false,
+      reason: "CONCURRENT_LIMIT_REACHED",
+      error: `You already have ${concurrentActive} active exams in progress. Please submit or finish them before starting a new test.`,
+      maxAttempts: MAX_EXAM_ATTEMPTS,
+      attemptsUsed: completedAttempts,
+      remainingAttempts: Math.max(0, MAX_EXAM_ATTEMPTS - completedAttempts),
+    };
+  }
+
+  // 5. Platform-Wide Limits: Daily attempt limit
+  const past24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const dailyCount = await prisma.examAttempt.count({
+    where: {
+      userId,
+      startedAt: { gte: past24h },
+    },
+  });
+
+  if (dailyCount >= DAILY_EXAM_ATTEMPT_LIMIT) {
+    return {
+      eligible: false,
+      reason: "DAILY_LIMIT_REACHED",
+      error: `You have reached your daily limit of ${DAILY_EXAM_ATTEMPT_LIMIT} exam attempts. Please try again tomorrow.`,
+      maxAttempts: MAX_EXAM_ATTEMPTS,
+      attemptsUsed: completedAttempts,
+      remainingAttempts: 0,
+    };
+  }
+
+  return {
+    eligible: true,
+    reason: "ELIGIBLE",
+    maxAttempts: MAX_EXAM_ATTEMPTS,
+    attemptsUsed: completedAttempts,
+    remainingAttempts: MAX_EXAM_ATTEMPTS - completedAttempts,
+  };
+}
+
+/**
  * Starts a new IN_PROGRESS ExamAttempt or resumes an existing active one.
+ * Uses checkExamAttemptEligibility to enforce:
+ * - One attempt belongs to one student and one exam
+ * - Reusing the same attemptId when resuming unfinished exams
+ * - Preventing duplicate attempt IDs on page refresh
+ * - Backend eligibility and attempt limits
  */
 export async function startOrResumeExamAttempt(params: {
   userId: string;
@@ -147,9 +459,23 @@ export async function startOrResumeExamAttempt(params: {
   roomId?: string | null;
   roomExamId?: string | null;
 }): Promise<
-  | { status: "IN_PROGRESS"; attempt: HydratedAttempt }
+  | {
+      status: "IN_PROGRESS";
+      attempt: HydratedAttempt;
+      isResume: boolean;
+      attemptsUsed: number;
+      maxAttempts: number;
+    }
   | { status: "EXPIRED"; finalizedAttemptId: string; score: number }
   | { status: "ALREADY_SUBMITTED"; finalizedAttemptId: string }
+  | {
+      status: "INELIGIBLE";
+      reason: string;
+      error: string;
+      maxAttempts: number;
+      attemptsUsed: number;
+      finalizedAttemptId?: string;
+    }
 > {
   const { userId, examId, roomId = null, roomExamId = null } = params;
 
@@ -177,7 +503,13 @@ export async function startOrResumeExamAttempt(params: {
     });
 
     if (!room || room.participants.length === 0 || room.roomExams.length === 0) {
-      throw new Error("Unauthorized or room exam not found.");
+      return {
+        status: "INELIGIBLE",
+        reason: "UNAUTHORIZED",
+        error: "Unauthorized or room exam not found.",
+        maxAttempts: MAX_ROOM_ATTEMPTS,
+        attemptsUsed: 0,
+      };
     }
 
     const roomExam = room.roomExams[0];
@@ -187,15 +519,6 @@ export async function startOrResumeExamAttempt(params: {
 
     const scheduledMs = new Date(roomExam.scheduledAt).getTime();
     roomDeadlineMs = scheduledMs + (durationMinutes + 15) * 60 * 1000;
-
-    // Check if already submitted in this room
-    const submitted = await prisma.attempt.findFirst({
-      where: { userId, examId, roomId, submittedAt: { not: null } },
-      select: { id: true },
-    });
-    if (submitted) {
-      return { status: "ALREADY_SUBMITTED", finalizedAttemptId: submitted.id };
-    }
   } else {
     const exam = await prisma.exam.findFirst({
       where: { id: examId, userId },
@@ -205,14 +528,21 @@ export async function startOrResumeExamAttempt(params: {
     });
 
     if (!exam) {
-      throw new Error("Exam not found.");
+      return {
+        status: "INELIGIBLE",
+        reason: "EXAM_NOT_FOUND",
+        error: "Exam not found.",
+        maxAttempts: MAX_EXAM_ATTEMPTS,
+        attemptsUsed: 0,
+      };
     }
 
     durationMinutes = exam.durationMinutes || 180;
     orderedQuestionIds = exam.questions.map((q) => q.id);
   }
 
-  const activeCheck = await getActiveExamAttempt({
+  // Enforce Backend Eligibility & Attempt Limits
+  const eligibility = await checkExamAttemptEligibility({
     userId,
     examId,
     roomId,
@@ -220,13 +550,42 @@ export async function startOrResumeExamAttempt(params: {
     orderedQuestionIds,
   });
 
-  if (activeCheck.status === "IN_PROGRESS") {
-    return activeCheck;
-  }
-  if (activeCheck.status === "EXPIRED") {
-    return activeCheck;
+  if (eligibility.reason === "RESUME" && eligibility.activeAttempt) {
+    return {
+      status: "IN_PROGRESS",
+      attempt: eligibility.activeAttempt,
+      isResume: true,
+      attemptsUsed: eligibility.attemptsUsed,
+      maxAttempts: eligibility.maxAttempts,
+    };
   }
 
+  if (eligibility.reason === "EXPIRED" && eligibility.finalizedAttemptId) {
+    return {
+      status: "EXPIRED",
+      finalizedAttemptId: eligibility.finalizedAttemptId,
+      score: 0,
+    };
+  }
+
+  if (!eligibility.eligible) {
+    if (eligibility.finalizedAttemptId && eligibility.reason === "ROOM_ATTEMPT_LIMIT_REACHED") {
+      return {
+        status: "ALREADY_SUBMITTED",
+        finalizedAttemptId: eligibility.finalizedAttemptId,
+      };
+    }
+    return {
+      status: "INELIGIBLE",
+      reason: eligibility.reason,
+      error: eligibility.error || "You are not eligible to start this exam attempt.",
+      maxAttempts: eligibility.maxAttempts,
+      attemptsUsed: eligibility.attemptsUsed,
+      finalizedAttemptId: eligibility.finalizedAttemptId,
+    };
+  }
+
+  // Create brand new ExamAttempt
   const startedAt = new Date();
   let expiresMs = startedAt.getTime() + durationMinutes * 60 * 1000;
   if (roomDeadlineMs !== null) {
@@ -268,6 +627,9 @@ export async function startOrResumeExamAttempt(params: {
   return {
     status: "IN_PROGRESS",
     attempt: buildHydratedAttempt(created, orderedQuestionIds),
+    isResume: false,
+    attemptsUsed: eligibility.attemptsUsed + 1,
+    maxAttempts: eligibility.maxAttempts,
   };
 }
 

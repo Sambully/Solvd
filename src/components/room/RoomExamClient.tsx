@@ -54,6 +54,7 @@ export default function RoomExamClient({
       durationMinutes={durationMinutes}
       questions={questions}
       initialAttempt={initialAttempt}
+      attemptInfo={{ currentAttemptNumber: 1, maxAttempts: 1 }}
       onSubmit={handleRoomSubmit}
     />
   );

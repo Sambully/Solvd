@@ -1,6 +1,39 @@
 import { NextResponse } from "next/server";
 import { getOrCreateUser } from "@/lib/getOrCreateUser";
-import { startOrResumeExamAttempt } from "@/lib/attemptService";
+import {
+  startOrResumeExamAttempt,
+  checkExamAttemptEligibility,
+} from "@/lib/attemptService";
+
+export async function GET(req: Request) {
+  const user = await getOrCreateUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const examId = searchParams.get("examId")?.trim() || "";
+  const roomId = searchParams.get("roomId")?.trim() || null;
+  const roomExamId = searchParams.get("roomExamId")?.trim() || null;
+
+  if (!examId) {
+    return NextResponse.json({ error: "examId is required." }, { status: 400 });
+  }
+
+  try {
+    const eligibility = await checkExamAttemptEligibility({
+      userId: user.id,
+      examId,
+      roomId,
+      roomExamId,
+    });
+
+    return NextResponse.json(eligibility);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to check attempt eligibility.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
 
 export async function POST(req: Request) {
   const user = await getOrCreateUser();
@@ -31,6 +64,19 @@ export async function POST(req: Request) {
       roomId,
       roomExamId,
     });
+
+    if (result.status === "INELIGIBLE") {
+      return NextResponse.json(
+        {
+          error: result.error,
+          reason: result.reason,
+          maxAttempts: result.maxAttempts,
+          attemptsUsed: result.attemptsUsed,
+          finalizedAttemptId: result.finalizedAttemptId,
+        },
+        { status: 403 }
+      );
+    }
 
     return NextResponse.json(result);
   } catch (err) {

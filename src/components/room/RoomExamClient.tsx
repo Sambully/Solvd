@@ -41,6 +41,7 @@ export default function RoomExamClient({
       router.refresh();
     } else {
       alert(res.error || "Failed to submit room test attempt.");
+      router.refresh();
     }
   }
 

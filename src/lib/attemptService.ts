@@ -8,6 +8,13 @@ export const MAX_ROOM_ATTEMPTS = 1;
 export const MAX_CONCURRENT_ATTEMPTS = Number(process.env.MAX_CONCURRENT_ATTEMPTS) || 2;
 export const DAILY_EXAM_ATTEMPT_LIMIT = Number(process.env.DAILY_EXAM_ATTEMPT_LIMIT) || 20;
 
+/**
+ * Defined server grace-period policy for Room Exams (60 seconds network buffer).
+ * Submissions received within (deadline + 60s) are accepted to accommodate network latency.
+ * Submissions received past (deadline + 60s) are strictly rejected on the server.
+ */
+export const ROOM_EXAM_GRACE_PERIOD_MS = 60 * 1000;
+
 export type HydratedAttempt = {
   attemptId: string;
   startedAt: string;
@@ -150,7 +157,10 @@ export async function getActiveExamAttempt(params: {
     return { status: "NONE" };
   }
 
-  if (existing.expiresAt.getTime() <= Date.now()) {
+  // Server-Authoritative Timer Policy:
+  // Only Room Exams auto-expire strictly by wall-clock expiresAt.
+  // Personal exams allow students to resume, take breaks, and complete self-paced study.
+  if (roomId && existing.expiresAt.getTime() <= Date.now()) {
     const finalized = await finalizeExamAttempt({
       userId,
       attemptId: existing.id,
@@ -684,14 +694,17 @@ export async function saveAttemptProgress(params: {
     };
   }
 
-  // Allow a 15s network grace window for final saves triggered right at 00:00
-  const GRACE_MS = 15_000;
-  if (Date.now() > attempt.expiresAt.getTime() + GRACE_MS) {
-    return {
-      ok: false,
-      code: "EXPIRED",
-      error: "Exam timer has expired.",
-    };
+  // Server-Authoritative Timer Policy:
+  // Reject progress autosaves received after room deadline + defined grace period policy (60s).
+  // Personal exams remain unrestricted for practice study.
+  if (attempt.roomId) {
+    if (Date.now() > attempt.expiresAt.getTime() + ROOM_EXAM_GRACE_PERIOD_MS) {
+      return {
+        ok: false,
+        code: "EXPIRED",
+        error: "Room exam timer has expired (grace period exceeded). Answers cannot be saved.",
+      };
+    }
   }
 
   const validQuestionIds = new Set(attempt.exam.questions.map((q) => q.id));
@@ -808,6 +821,20 @@ export async function finalizeExamAttempt(params: {
     };
   }
 
+  // Server-Authoritative Timer Validation:
+  // Validate submission time on the server. Reject submissions received after the deadline + defined grace-period policy (60s).
+  // Applies exclusively to Room Exams, not personal exams.
+  const isRoomExam = Boolean(attempt.roomId);
+  const nowMs = Date.now();
+  const deadlineMs = attempt.expiresAt.getTime();
+  const isPastGrace = nowMs > deadlineMs + ROOM_EXAM_GRACE_PERIOD_MS;
+
+  if (isRoomExam && !markExpired && isPastGrace) {
+    throw new Error(
+      "EXAM_DEADLINE_EXCEEDED: Submission rejected because the exam deadline has passed (grace period exceeded)."
+    );
+  }
+
   const validQuestionIds = new Set(attempt.exam.questions.map((q) => q.id));
 
   return await prisma.$transaction(async (tx) => {
@@ -823,8 +850,8 @@ export async function finalizeExamAttempt(params: {
       };
     }
 
-    // Flush any final client answers into the normalized `answers` table
-    if (finalAnswers && typeof finalAnswers === "object") {
+    // Flush any final client answers into the normalized `answers` table (only if not expired)
+    if (!markExpired && (!isRoomExam || !isPastGrace) && finalAnswers && typeof finalAnswers === "object") {
       for (const [questionId, selected] of Object.entries(finalAnswers)) {
         if (!validQuestionIds.has(questionId)) continue;
         if (!Number.isInteger(selected) || selected < 0 || selected > 3) continue;

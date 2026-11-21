@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import type { AnswerMap } from "@/lib/examTypes";
 import { mapShuffledToOriginalOptionIndex } from "@/lib/optionShuffle";
 import { getStudentColor } from "@/lib/roomConstants";
-import { finalizeExamAttempt } from "@/lib/attemptService";
+import { finalizeExamAttempt, ROOM_EXAM_GRACE_PERIOD_MS } from "@/lib/attemptService";
 
 const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -661,15 +661,27 @@ export async function submitRoomExamAttempt(
     }
 
     if (resolvedExamAttemptId) {
-      const { finalizedAttemptId } = await finalizeExamAttempt({
-        userId: user.id,
-        attemptId: resolvedExamAttemptId,
-        finalAnswers: answers,
-      });
+      try {
+        const { finalizedAttemptId } = await finalizeExamAttempt({
+          userId: user.id,
+          attemptId: resolvedExamAttemptId,
+          finalAnswers: answers,
+        });
 
-      revalidatePath(`/dashboard/room/${room.roomCode}`);
-      revalidatePath(`/dashboard/room/${room.roomCode}/test/${examId}`);
-      return { success: true, attemptId: finalizedAttemptId };
+        revalidatePath(`/dashboard/room/${room.roomCode}`);
+        revalidatePath(`/dashboard/room/${room.roomCode}/test/${examId}`);
+        return { success: true, attemptId: finalizedAttemptId };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "";
+        if (msg.includes("EXAM_DEADLINE_EXCEEDED")) {
+          return {
+            success: false,
+            error:
+              "Submission rejected: The exam deadline has passed. Late submissions past the 60-second grace window are not accepted.",
+          };
+        }
+        throw err;
+      }
     }
 
     const exam = await prisma.exam.findUnique({
@@ -680,6 +692,20 @@ export async function submitRoomExamAttempt(
     });
 
     if (!exam) return { success: false, error: "Exam not found." };
+
+    // Server-Authoritative Timer Validation for Room Exam Fallback:
+    if (roomExam) {
+      const scheduledMs = new Date(roomExam.scheduledAt).getTime();
+      const durationMinutes = exam.durationMinutes || 180;
+      const roomDeadlineMs = scheduledMs + (durationMinutes + 15) * 60 * 1000;
+      if (Date.now() > roomDeadlineMs + ROOM_EXAM_GRACE_PERIOD_MS) {
+        return {
+          success: false,
+          error:
+            "Submission rejected: The study circle exam testing window has ended.",
+        };
+      }
+    }
 
     let correctCount = 0;
     let incorrectCount = 0;

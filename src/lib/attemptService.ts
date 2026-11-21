@@ -838,16 +838,59 @@ export async function finalizeExamAttempt(params: {
   const validQuestionIds = new Set(attempt.exam.questions.map((q) => q.id));
 
   return await prisma.$transaction(async (tx) => {
-    // Re-check status inside transaction to guard against concurrent finalization
-    const locked = await tx.examAttempt.findUnique({
-      where: { id: attempt.id },
-      select: { status: true, finalizedAttemptId: true, score: true },
+    const now = new Date();
+    const targetStatus = markExpired ? "EXPIRED" : "SUBMITTED";
+
+    // Conditional atomic database update:
+    // UPDATE exam_attempts
+    // SET status = $targetStatus, submitted_at = CURRENT_TIMESTAMP
+    // WHERE id = $attemptId AND status = 'IN_PROGRESS';
+    // Only one request can successfully transition the attempt from IN_PROGRESS.
+    const transitionResult = await tx.examAttempt.updateMany({
+      where: {
+        id: attempt.id,
+        status: "IN_PROGRESS",
+      },
+      data: {
+        status: targetStatus,
+        submittedAt: now,
+      },
     });
-    if (locked && locked.status !== "IN_PROGRESS" && locked.finalizedAttemptId) {
-      return {
-        finalizedAttemptId: locked.finalizedAttemptId,
-        score: locked.score ?? 0,
-      };
+
+    if (transitionResult.count === 0) {
+      // The attempt has already been transitioned by another concurrent request.
+      // Return the existing result if the same attempt is submitted again.
+      const existing = await tx.examAttempt.findUnique({
+        where: { id: attempt.id },
+        select: { status: true, finalizedAttemptId: true, score: true },
+      });
+
+      if (existing?.finalizedAttemptId) {
+        return {
+          finalizedAttemptId: existing.finalizedAttemptId,
+          score: existing.score ?? 0,
+        };
+      }
+
+      // If the winning concurrent transaction has written the summary Attempt row:
+      const existingSummary = await tx.attempt.findFirst({
+        where: {
+          examId: attempt.examId,
+          userId: attempt.userId,
+          ...(attempt.roomId ? { roomId: attempt.roomId } : { roomId: null }),
+        },
+        orderBy: { submittedAt: "desc" },
+        select: { id: true, score: true },
+      });
+
+      if (existingSummary) {
+        return {
+          finalizedAttemptId: existingSummary.id,
+          score: existingSummary.score ?? 0,
+        };
+      }
+
+      throw new Error("This exam attempt has already been submitted.");
     }
 
     // Flush any final client answers into the normalized `answers` table (only if not expired)
@@ -908,7 +951,6 @@ export async function finalizeExamAttempt(params: {
     }
 
     const totalScore = correctCount * 4 - incorrectCount * 1;
-    const now = new Date();
 
     // Sync summary row to `attempts` table (preserves real `startedAt` and compatibility with analytics/dashboard/leaderboards)
     const summaryAttempt = await tx.attempt.create({
@@ -927,8 +969,6 @@ export async function finalizeExamAttempt(params: {
     await tx.examAttempt.update({
       where: { id: attempt.id },
       data: {
-        status: markExpired ? "EXPIRED" : "SUBMITTED",
-        submittedAt: now,
         score: totalScore,
         finalizedAttemptId: summaryAttempt.id,
       },

@@ -90,6 +90,7 @@ export default function ExamRunner({
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">(
     initialAttempt ? "saved" : "idle"
   );
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   // Initialize and track 5-state map for NTA (hydrated from DB if resuming)
@@ -373,12 +374,19 @@ export default function ExamRunner({
   }, [started]);
 
   const submit = () => {
-    if (submittedRef.current) return;
+    if (submittedRef.current || isSubmitting) return;
     submittedRef.current = true;
+    setIsSubmitting(true);
     startTransition(async () => {
-      // Wait for any in-flight or queued persistence flush before finalizing
-      await flushPendingSaves(true).catch(() => {});
-      await onSubmit(examId, answersRef.current, attemptIdRef.current ?? undefined);
+      try {
+        // Wait for any in-flight or queued persistence flush before finalizing
+        await flushPendingSaves(true).catch(() => {});
+        await onSubmit(examId, answersRef.current, attemptIdRef.current ?? undefined);
+      } catch (err) {
+        setIsSubmitting(false);
+        submittedRef.current = false;
+        throw err;
+      }
     });
   };
 
@@ -811,7 +819,7 @@ export default function ExamRunner({
   // ==========================================
   // 2. SUBMITTING OVERLAY
   // ==========================================
-  if (isPending) {
+  if (isPending || isSubmitting) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 select-none">
         <Loader2 className="h-8 w-8 animate-spin text-black dark:text-white" />
@@ -880,8 +888,8 @@ export default function ExamRunner({
           totalQuestions={totalQuestions}
           questionIds={questionIds}
           statusMap={statusMap}
+          isSubmitting={isSubmitting}
           onConfirmSubmit={() => {
-            setShowNTAConfirm(false);
             submit();
           }}
           onCancel={() => setShowNTAConfirm(false)}
@@ -1123,15 +1131,24 @@ export default function ExamRunner({
             <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => setShowModernConfirm(false)}
-                className="rounded-xl border border-black/[.1] px-4 py-2.5 text-sm font-medium text-black hover:bg-zinc-50 dark:border-white/[.15] dark:text-zinc-50 dark:hover:bg-zinc-900"
+                disabled={isSubmitting}
+                className="rounded-xl border border-black/[.1] px-4 py-2.5 text-sm font-medium text-black hover:bg-zinc-50 disabled:opacity-50 dark:border-white/[.15] dark:text-zinc-50 dark:hover:bg-zinc-900"
               >
                 Keep Reviewing
               </button>
               <button
                 onClick={submit}
-                className="rounded-xl bg-black px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                disabled={isSubmitting}
+                className="flex items-center gap-2 rounded-xl bg-black px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 disabled:opacity-60 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
               >
-                Confirm & Submit
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Submitting Exam…
+                  </>
+                ) : (
+                  "Confirm & Submit"
+                )}
               </button>
             </div>
           </div>

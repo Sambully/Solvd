@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, HelpCircle } from "lucide-react";
+import { AlertCircle, HelpCircle, Loader2 } from "lucide-react";
 import type { QuestionStatusMap } from "@/lib/ntaTypes";
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
   totalQuestions: number;
   questionIds: string[];
   statusMap: QuestionStatusMap;
+  isSubmitting?: boolean;
   onConfirmSubmit: () => void;
   onCancel: () => void;
 }
@@ -19,6 +20,7 @@ export default function NTASubmitModal({
   totalQuestions,
   questionIds,
   statusMap,
+  isSubmitting = false,
   onConfirmSubmit,
   onCancel,
 }: Props) {
@@ -128,15 +130,24 @@ export default function NTASubmitModal({
         <div className="mt-5 flex items-center justify-end gap-3">
           <button
             onClick={onCancel}
-            className="rounded-xl border border-zinc-300 px-4 py-2.5 text-xs font-bold text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
+            disabled={isSubmitting}
+            className="rounded-xl border border-zinc-300 px-4 py-2.5 text-xs font-bold text-zinc-700 hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
           >
             No, Continue Exam
           </button>
           <button
             onClick={onConfirmSubmit}
-            className="rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white hover:bg-blue-500 transition-colors shadow-sm"
+            disabled={isSubmitting}
+            className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white hover:bg-blue-500 disabled:opacity-60 transition-colors shadow-sm"
           >
-            Yes, Submit Exam
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Submitting Exam…
+              </>
+            ) : (
+              "Yes, Submit Exam"
+            )}
           </button>
         </div>
       </div>

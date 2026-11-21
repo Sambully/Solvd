@@ -18,6 +18,9 @@ import RoomLeaderboardTable from "@/components/room/RoomLeaderboardTable";
 import RoomWeakTopics from "@/components/room/RoomWeakTopics";
 import type { RunnerQuestion } from "@/components/ExamRunner";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function RoomTestPage({
   params,
 }: {

@@ -137,6 +137,45 @@ export default function ExamRunner({
     }
   }, []);
 
+  // If not hydrated by SSR on initial mount, probe for an existing active attempt to auto-resume
+  useEffect(() => {
+    if (started || initialAttempt) return;
+
+    let isMounted = true;
+    async function checkActiveAttempt() {
+      try {
+        const query = new URLSearchParams({ examId });
+        if (roomId) query.set("roomId", roomId);
+        if (roomExamId) query.set("roomExamId", roomExamId);
+
+        const res = await fetch(`/api/attempts?${query.toString()}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (isMounted && data.reason === "RESUME" && data.activeAttempt) {
+          const hydrated = data.activeAttempt as HydratedAttempt;
+          attemptIdRef.current = hydrated.attemptId;
+          answersRef.current = hydrated.answers;
+          deadlineMsRef.current = Date.now() + hydrated.remainingSeconds * 1000;
+
+          setAttemptId(hydrated.attemptId);
+          setAnswers(hydrated.answers);
+          setStatusMap(hydrated.statusMap);
+          setCurrent(hydrated.currentQuestionIndex);
+          setTimeLeft(hydrated.remainingSeconds);
+          setSaveState("saved");
+          setStarted(true);
+        }
+      } catch {
+        // Silently proceed; user can still click Start Exam
+      }
+    }
+
+    void checkActiveAttempt();
+    return () => {
+      isMounted = false;
+    };
+  }, [started, initialAttempt, examId, roomId, roomExamId]);
+
   const toggleMode = (newMode?: ExamInterfaceMode) => {
     const target = newMode ?? (mode === "NTA_OFFICIAL" ? "MODERN" : "NTA_OFFICIAL");
     setMode(target);

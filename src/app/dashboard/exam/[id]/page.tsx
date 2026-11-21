@@ -7,6 +7,9 @@ import ExamRunner, { type RunnerQuestion } from "@/components/ExamRunner";
 import { submitAttempt } from "./actions";
 import { AlertCircle, ArrowLeft, Trophy } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function ExamPage({
   params,
 }: {

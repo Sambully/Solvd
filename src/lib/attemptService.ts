@@ -78,7 +78,7 @@ function buildHydratedAttempt(
   const safeCurrentIndex =
     orderedQuestionIds.length > 0
       ? Math.max(0, Math.min(attempt.currentQuestionIndex, orderedQuestionIds.length - 1))
-      : 0;
+      : attempt.currentQuestionIndex;
 
   orderedQuestionIds.forEach((qid, idx) => {
     statusMap[qid] = idx === 0 || idx === safeCurrentIndex ? "NOT_ANSWERED" : "NOT_VISITED";
@@ -118,7 +118,7 @@ export async function getActiveExamAttempt(params: {
   examId: string;
   roomId?: string | null;
   roomExamId?: string | null;
-  orderedQuestionIds: string[];
+  orderedQuestionIds?: string[];
 }): Promise<
   | { status: "NONE" }
   | { status: "IN_PROGRESS"; attempt: HydratedAttempt }
@@ -163,9 +163,19 @@ export async function getActiveExamAttempt(params: {
     };
   }
 
+  let resolvedQuestionIds = orderedQuestionIds && orderedQuestionIds.length > 0 ? orderedQuestionIds : [];
+  if (resolvedQuestionIds.length === 0) {
+    const questions = await prisma.question.findMany({
+      where: { examId },
+      select: { id: true },
+      orderBy: { id: "asc" },
+    });
+    resolvedQuestionIds = questions.map((q) => q.id);
+  }
+
   return {
     status: "IN_PROGRESS",
-    attempt: buildHydratedAttempt(existing, orderedQuestionIds),
+    attempt: buildHydratedAttempt(existing, resolvedQuestionIds),
   };
 }
 
@@ -207,15 +217,27 @@ export async function checkExamAttemptEligibility(params: {
     orderedQuestionIds,
   });
 
+  const maxAttemptsAllowed = roomId ? MAX_ROOM_ATTEMPTS : MAX_EXAM_ATTEMPTS;
+
+  // Pre-calculate completed attempts for this exam context
+  const completedAttempts = await prisma.attempt.count({
+    where: {
+      userId,
+      examId,
+      roomId: roomId ?? null,
+      submittedAt: { not: null },
+    },
+  });
+
   if (activeCheck.status === "IN_PROGRESS") {
     return {
       eligible: true,
       reason: "RESUME",
       existingAttemptId: activeCheck.attempt.attemptId,
       activeAttempt: activeCheck.attempt,
-      maxAttempts: roomId ? MAX_ROOM_ATTEMPTS : MAX_EXAM_ATTEMPTS,
-      attemptsUsed: 0,
-      remainingAttempts: 1,
+      maxAttempts: maxAttemptsAllowed,
+      attemptsUsed: completedAttempts,
+      remainingAttempts: Math.max(0, maxAttemptsAllowed - completedAttempts),
     };
   }
 
@@ -225,8 +247,8 @@ export async function checkExamAttemptEligibility(params: {
       reason: "EXPIRED",
       finalizedAttemptId: activeCheck.finalizedAttemptId,
       error: "Your previous exam session has expired.",
-      maxAttempts: roomId ? MAX_ROOM_ATTEMPTS : MAX_EXAM_ATTEMPTS,
-      attemptsUsed: 1,
+      maxAttempts: maxAttemptsAllowed,
+      attemptsUsed: Math.max(1, completedAttempts),
       remainingAttempts: 0,
     };
   }
@@ -369,15 +391,6 @@ export async function checkExamAttemptEligibility(params: {
   }
 
   // Solo Exam Attempt Limit (Completed attempts)
-  const completedAttempts = await prisma.attempt.count({
-    where: {
-      userId,
-      examId,
-      roomId: null,
-      submittedAt: { not: null },
-    },
-  });
-
   if (completedAttempts >= MAX_EXAM_ATTEMPTS) {
     const latest = await prisma.attempt.findFirst({
       where: { userId, examId, roomId: null, submittedAt: { not: null } },

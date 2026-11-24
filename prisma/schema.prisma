@@ -169,7 +169,11 @@ model ExamAttempt {
 
   savedAnswers Answer[]
 
-  @@index([userId, examId, status])
+  @@index([userId, examId], map: "idx_user_exam")
+  @@index([userId, examId, status], map: "idx_user_exam_status")
+  @@index([userId, startedAt], map: "idx_user_started_at")
+  @@index([userId, status], map: "idx_user_status")
+  @@index([status, expiresAt], map: "idx_status_expires_at")
   @@index([examId])
   @@index([userId])
   @@index([roomId])
@@ -187,9 +191,8 @@ model Answer {
   status              QuestionAnswerStatus @default(NOT_ANSWERED)
   updatedAt           DateTime             @updatedAt @map("updated_at")
 
-  @@unique([attemptId, questionId])
-  @@index([attemptId])
-  @@index([questionId])
+  @@unique([attemptId, questionId], map: "idx_attempt_question")
+  @@index([questionId], map: "idx_answer_question")
   @@map("answers")
 }
 
@@ -208,6 +211,7 @@ model Attempt {
   answers     Json
   score       Int?
 
+  @@index([userId, examId])
   @@index([examId])
   @@index([userId])
   @@index([roomId])

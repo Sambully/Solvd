@@ -94,6 +94,54 @@ graph TD
 | **Email Service** | [Nodemailer](https://nodemailer.com), [Resend](https://resend.com) |
 | **Mobile Compilation** | [Capacitor 8 (`@capacitor/android`, `@capacitor/core`)](https://capacitorjs.com) |
 
+### 🧠 Idempotent Gemini Exam Generation Architecture
+
+To protect API quota, eliminate duplicate exams, and guarantee resilience against network hiccups or database timeouts, Solvd implements a zero-waste, server-coordinated idempotent generation pipeline:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as Frontend Client
+    participant API as /api/generate
+    participant DB as PostgreSQL (generation_jobs & exams)
+    participant Gemini as Google Gemini API
+
+    Client->>API: POST /api/generate (request_id, files, options)
+    API->>DB: 1. Atomic Upsert: generation_jobs where id = request_id
+
+    alt Already COMPLETED
+        DB-->>API: Returns existing exam_id
+        API-->>Client: Return { examId, status: 'COMPLETED' } (0 Gemini calls!)
+    else Already PROCESSING
+        DB-->>API: Another request is currently running
+        API-->>Client: Return { status: 'PROCESSING' } / wait for result
+    else First time (or FAILED retry)
+        API->>DB: Job acquired (status = 'PROCESSING')
+
+        alt Job already has cached questions from previous Gemini call
+            API->>API: Skip Gemini call! Reuse cached questions
+        else Need new Gemini call
+            API->>Gemini: Call Gemini with bounded retries & exp. backoff
+            Gemini-->>API: Returns valid MCQs JSON
+            API->>DB: Cache raw Gemini response on generation_jobs
+        end
+
+        API->>DB: Transaction: Create Exam + Questions + Mark Job COMPLETED
+        DB-->>API: Transaction Committed
+        API-->>Client: Return { examId, status: 'COMPLETED' }
+    end
+```
+
+<div align="center">
+  <img src="public/gemini-generation-architecture.png" alt="Gemini Idempotent Generation Architecture" width="850" />
+</div>
+
+#### Resilience Guarantees
+1. **Client Request ID Tracking**: The frontend assigns a unique `request_id` upon upload. If a student encounters a transient network error and hits **"Try Again"**, the exact same `request_id` is replayed.
+2. **Atomic Locking (`ExamGenerationJob`)**: Concurrent requests with the same ID return `HTTP 409 (PROCESSING)`, preventing duplicate background workers.
+3. **Bounded Retries with Backoff**: Transient Gemini errors (HTTP 429, 503, network timeouts) are retried with exponential backoff and jitter up to 2 times before declaring failure.
+4. **Pre-Persistence Response Caching**: When Gemini successfully generates MCQs, the raw response is cached *before* attempting the database write. If database persistence fails and the user retries, Gemini is bypassed entirely and the cached questions are persisted—**0 API credits wasted**.
+
 ---
 
 ## 📂 Project Structure

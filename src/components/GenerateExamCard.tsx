@@ -63,6 +63,7 @@ function formatBytes(bytes: number) {
 export default function GenerateExamCard() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const requestIdRef = useRef<string | null>(null);
 
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -97,6 +98,7 @@ export default function GenerateExamCard() {
     }
 
     setError(null);
+    requestIdRef.current = null; // New files: start a fresh request ID
     setFiles((prev) => {
       // Deduplicate by name and size
       const existingNames = new Set(prev.map((f) => `${f.name}-${f.size}`));
@@ -106,6 +108,7 @@ export default function GenerateExamCard() {
   }
 
   function removeFile(index: number) {
+    requestIdRef.current = null;
     setFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
@@ -144,8 +147,15 @@ export default function GenerateExamCard() {
     setError(null);
     setMsgIndex(0);
 
+    // Reuse existing requestId on retry so the backend recovers cached questions without re-calling Gemini
+    if (!requestIdRef.current) {
+      requestIdRef.current = crypto.randomUUID();
+    }
+    const currentRequestId = requestIdRef.current;
+
     try {
       const body = new FormData();
+      body.append("requestId", currentRequestId);
       for (const file of files) {
         body.append("files", file);
       }
@@ -153,7 +163,13 @@ export default function GenerateExamCard() {
       body.append("subject", subject === "Auto / Mixed" ? "Mixed" : subject);
       body.append("difficulty", difficulty || "MIXED");
 
-      const res = await fetch("/api/generate", { method: "POST", body });
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "X-Request-Id": currentRequestId,
+        },
+        body,
+      });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -161,8 +177,10 @@ export default function GenerateExamCard() {
       }
 
       const { examId } = await res.json();
+      requestIdRef.current = null; // Successfully completed: clear request ID
       router.push(`/dashboard/exam/${examId}`);
     } catch (err) {
+      // Keep requestIdRef.current on failure so user retry sends the identical request_id
       setStatus("error");
       setError(err instanceof Error ? err.message : "Something went wrong.");
     }

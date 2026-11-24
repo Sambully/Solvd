@@ -14,6 +14,13 @@ enum SubscriptionTier {
   TIER_10
 }
 
+enum GenerationJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 enum MaterialStatus {
   PROCESSING
   READY
@@ -69,6 +76,7 @@ model User {
   hostedTestRooms     TestRoom[]            @relation("HostedTestRooms")
   roomParticipations  RoomParticipant[]
   questionBankModules QuestionBankModule[]
+  examGenerationJobs  ExamGenerationJob[]
 
   @@map("users")
 }
@@ -114,8 +122,9 @@ model Exam {
 
   questions    Question[]
   attempts     Attempt[]
-  examAttempts ExamAttempt[]
-  roomExams    RoomExam[]
+  examAttempts  ExamAttempt[]
+  roomExams     RoomExam[]
+  generationJob ExamGenerationJob?
 
   @@index([userId])
   @@index([materialId])
@@ -297,4 +306,21 @@ model BankQuestion {
   @@index([moduleId])
   @@index([subject])
   @@map("bank_questions")
+}
+
+model ExamGenerationJob {
+  id           String              @id // Client-provided request_id (UUID)
+  userId       String              @map("user_id")
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       GenerationJobStatus @default(PENDING)
+  examId       String?             @unique @map("exam_id")
+  exam         Exam?               @relation(fields: [examId], references: [id], onDelete: SetNull)
+  cachedResult Json?               @map("cached_result")
+  errorMessage String?             @map("error_message")
+  attempts     Int                 @default(0)
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  @@index([userId, status])
+  @@map("exam_generation_jobs")
 }

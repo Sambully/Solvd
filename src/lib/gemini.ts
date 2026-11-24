@@ -355,29 +355,57 @@ export async function generateExamFromFiles(
     );
 
     let lastError: unknown = null;
+    const MAX_TRANSIENT_RETRIES = 2; // Up to 2 retries per model (3 attempts total) with exponential backoff
 
     for (const model of modelCandidates) {
-      try {
-        const response = await ai.models.generateContent({
-          model,
-          contents: [{ role: "user", parts: contentParts }],
-          config: {
-            responseMimeType: "application/json",
-            maxOutputTokens: 8192,
-            temperature: 0.4,
-          },
-        });
+      for (let attempt = 0; attempt <= MAX_TRANSIENT_RETRIES; attempt++) {
+        try {
+          const response = await ai.models.generateContent({
+            model,
+            contents: [{ role: "user", parts: contentParts }],
+            config: {
+              responseMimeType: "application/json",
+              maxOutputTokens: 8192,
+              temperature: 0.4,
+            },
+          });
 
-        const text = response.text;
-        if (!text) throw new Error(`Empty response received from ${model}`);
+          const text = response.text;
+          if (!text) throw new Error(`Empty response received from ${model}`);
 
-        const parsed = sanitizeAndRepairJson(text);
-        return normalizeExamData(parsed);
-      } catch (err) {
-        lastError = err;
-        console.warn(`Model generation failed on ${model}, attempting fallback:`, err);
-        // Brief backoff before next fallback candidate
-        await new Promise((r) => setTimeout(r, 1000));
+          const parsed = sanitizeAndRepairJson(text);
+          return normalizeExamData(parsed);
+        } catch (err) {
+          lastError = err;
+          const status = (err as { status?: number })?.status;
+          const msg = err instanceof Error ? err.message : String(err);
+          const isTransient =
+            status === 429 ||
+            status === 500 ||
+            status === 502 ||
+            status === 503 ||
+            status === 504 ||
+            /resource_exhausted|quota|rate limit|overloaded|temporarily unavailable|econnreset|etimedout|timeout|fetch failed/i.test(
+              msg
+            );
+
+          // If transient and we have retries left for this model, back off exponentially with jitter
+          if (isTransient && attempt < MAX_TRANSIENT_RETRIES) {
+            const backoffMs = Math.min(
+              8000,
+              1000 * Math.pow(2, attempt) + Math.floor(Math.random() * 500)
+            );
+            console.warn(
+              `Transient error calling ${model} (attempt ${attempt + 1}/${MAX_TRANSIENT_RETRIES + 1}). Retrying in ${backoffMs}ms:`,
+              msg
+            );
+            await new Promise((r) => setTimeout(r, backoffMs));
+            continue;
+          }
+
+          console.warn(`Model generation failed on ${model}, attempting fallback:`, err);
+          break; // Break inner loop to try next fallback model candidate
+        }
       }
     }
 

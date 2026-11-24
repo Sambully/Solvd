@@ -67,6 +67,7 @@ interface GenerateRoomExamCardProps {
 
 export default function GenerateRoomExamCard({ onRoomCreated }: GenerateRoomExamCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const requestIdRef = useRef<string | null>(null);
 
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -106,6 +107,7 @@ export default function GenerateRoomExamCard({ onRoomCreated }: GenerateRoomExam
     }
 
     setError(null);
+    requestIdRef.current = null;
     setFiles((prev) => {
       const existingNames = new Set(prev.map((f) => `${f.name}-${f.size}`));
       const filtered = valid.filter((f) => !existingNames.has(`${f.name}-${f.size}`));
@@ -114,6 +116,7 @@ export default function GenerateRoomExamCard({ onRoomCreated }: GenerateRoomExam
   }
 
   function removeFile(index: number) {
+    requestIdRef.current = null;
     setFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
@@ -134,8 +137,15 @@ export default function GenerateRoomExamCard({ onRoomCreated }: GenerateRoomExam
     setError(null);
     setMsgIndex(0);
 
+    // Reuse existing requestId on retry so the backend recovers cached questions without re-calling Gemini
+    if (!requestIdRef.current) {
+      requestIdRef.current = crypto.randomUUID();
+    }
+    const currentRequestId = requestIdRef.current;
+
     try {
       const body = new FormData();
+      body.append("requestId", currentRequestId);
       for (const file of files) {
         body.append("files", file);
       }
@@ -143,7 +153,13 @@ export default function GenerateRoomExamCard({ onRoomCreated }: GenerateRoomExam
       body.append("subject", subject === "Auto / Mixed" ? "Mixed" : subject);
       body.append("difficulty", difficulty || "MIXED");
 
-      const res = await fetch("/api/generate", { method: "POST", body });
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "X-Request-Id": currentRequestId,
+        },
+        body,
+      });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -151,6 +167,7 @@ export default function GenerateRoomExamCard({ onRoomCreated }: GenerateRoomExam
       }
 
       const { examId } = await res.json();
+      requestIdRef.current = null;
       setGeneratedExamInfo({
         examId,
         title: `${subject === "Auto / Mixed" ? "NEET" : subject} Mock Group Room Test`,
@@ -158,6 +175,7 @@ export default function GenerateRoomExamCard({ onRoomCreated }: GenerateRoomExam
       });
       setStatus("schedule");
     } catch (err) {
+      // Keep requestIdRef.current on failure so user retry sends the identical request_id
       setStatus("error");
       setError(err instanceof Error ? err.message : "Something went wrong.");
     }
